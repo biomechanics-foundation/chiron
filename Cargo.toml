@@ -1,0 +1,42 @@
+[package]
+name = "chiron"
+version = "0.0.4"
+authors = ["Claire V. Hammond <me@cvhammond.com>"]
+edition = "2021"
+categories = ["science", "simulation", "game-development", "science::robotics"]
+description = "Graphical and command-line interface tools for Biomechanics Foundation"
+license = "MIT OR Apache-2.0"
+homepage = "https://chiron.rs"
+repository = "https://github.com/biomechanics-foundation/chiron"
+readme = "README.md"
+keywords = ["biomechanics", "simulation", "game-development", "physics", "mathematics"]
+
+[dependencies]
+c3dio = "0.6.1"
+bevy_c3d = "0.12.1"
+
+bevy = "0.12"
+bevy_egui = "0.24"
+egui_dock = "0.9"
+egui = "0.24"
+egui_plot = "0.24"
+egui_extras = { version = "0.24", features = ["image", "svg"] }
+strum = "0.25"
+strum_macros = "0.25"
+uuid = "1.4"
+
+grid = "0.10"
+clap = "4.4"
+log = "0.4"
+env_logger = "0.10"
+colored = "2"
+indicatif = "0.17"
+glob = "0.3.1"
+
+[dev-dependencies]
+test-files = "0.1.2"
+
+[[bin]]
+name = "c3dio"
+path = "src/c3dio/main.rs"
+
