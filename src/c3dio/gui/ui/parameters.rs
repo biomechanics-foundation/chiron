@@ -1,4 +1,4 @@
-use super::{get_c3d, EguiTab};
+use super::{AddTabEvent, EguiTab};
 use bevy::prelude::*;
 use bevy_c3d::prelude::*;
 use egui_extras::{Column, TableBuilder};
@@ -6,24 +6,45 @@ use egui_extras::{Column, TableBuilder};
 pub fn draw_parameters_list(
     ui: &mut egui::Ui,
     world: &mut World,
-    added_tabs: &mut Vec<EguiTab>,
     group: &mut String,
     parameter: &mut String,
 ) {
-    if let Some(c3d) = get_c3d(world) {
-        for group in c3d.parameters.groups() {
-            ui.collapsing(group, |ui| {
-                for parameter in c3d.parameters.get_group(group).unwrap().keys() {
-                    if ui.button(parameter).clicked() {
-                        added_tabs
-                            .push(EguiTab::ParameterListView(group.clone(), parameter.clone()));
-                    }
-                }
-            });
+    let c3d_loaded = world.resource_scope::<C3dState, bool>(|world, c3d_state| {
+        let c3d_asset = world.get_resource::<Assets<C3dAsset>>();
+        if let Some(c3d_asset) = c3d_asset {
+            let c3d_asset = c3d_asset.get(&c3d_state.handle);
+            if let Some(_) = c3d_asset {
+                return true;
+            }
         }
-        ui.separator();
-        draw_parameter_table(ui, c3d, group, parameter);
+        false
+    });
+    if !c3d_loaded {
+        return;
     }
+    world.resource_scope::<C3dState, _>(|world, c3d_state| {
+        world.resource_scope::<Assets<C3dAsset>, _>(|world, c3d_asset| {
+            let c3d_asset = c3d_asset.get(&c3d_state.handle).unwrap();
+            for group in c3d_asset.c3d.parameters.groups() {
+                ui.collapsing(group, |ui| {
+                    for parameter in c3d_asset.c3d.parameters.get_group(group).unwrap().keys() {
+                        if ui.button(parameter).clicked() {
+                            world.send_event(AddTabEvent {
+                                tab: EguiTab::ParameterListView(group.clone(), parameter.clone()),
+                            });
+                        }
+                    }
+                });
+            }
+        });
+    });
+    ui.separator();
+    world.resource_scope::<C3dState, _>(|world, c3d_state| {
+        world.resource_scope::<Assets<C3dAsset>, _>(|_, c3d_asset| {
+            let c3d_asset = c3d_asset.get(&c3d_state.handle).unwrap();
+            draw_parameter_table(ui, &c3d_asset.c3d, group, parameter);
+        })
+    });
 }
 
 pub fn draw_parameter_table(ui: &mut egui::Ui, c3d: &C3d, group: &str, parameter: &str) {

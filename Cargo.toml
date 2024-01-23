@@ -20,9 +20,7 @@ bevy_egui = "0.24"
 egui_dock = "0.9"
 egui = "0.24"
 egui_plot = "0.24"
-egui_extras = { version = "0.24", features = ["image", "svg"] }
-strum = "0.25"
-strum_macros = "0.25"
+egui_extras = "0.24"
 uuid = "1.4"
 
 grid = "0.10"

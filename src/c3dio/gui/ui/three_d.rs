@@ -1,5 +1,5 @@
 use super::TabViewer;
-use egui_extras;
+use crate::ui::settings::SettingsMenuIsOpen;
 
 pub fn draw_three_d_overlay(ui: &mut egui::Ui, tab_viewer: &mut TabViewer) {
     ui.strong("Hello world!");
@@ -12,7 +12,8 @@ pub fn draw_three_d_overlay(ui: &mut egui::Ui, tab_viewer: &mut TabViewer) {
     ui.with_layout(egui::Layout::bottom_up(egui::Align::Max), |ui| {
         let button = ui.button("\u{2699}");
         if button.clicked() {
-            tab_viewer.windows.settings.open = !tab_viewer.windows.settings.open;
+            let mut open = tab_viewer.world.get_resource_mut::<SettingsMenuIsOpen>().unwrap();
+            open.0 = !open.0;
         }
     });
 }

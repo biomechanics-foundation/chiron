@@ -1,9 +1,12 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-use bevy_c3d::prelude::*;
 use bevy_egui::EguiContext;
 use bevy_egui::EguiSet;
-use egui_dock::{DockArea, DockState, NodeIndex, Style, Tree};
+use egui_dock::{DockArea, DockState, NodeIndex, Style};
+
+use self::notifications::NotificationsPlugin;
+use self::settings::SettingsPlugin;
+use self::top_menu::TopMenuPlugin;
 
 mod data;
 pub mod notifications;
@@ -11,19 +14,23 @@ mod parameters;
 mod plot;
 mod settings;
 mod three_d;
+mod top_menu;
 mod windows;
-use notifications::NotificationQueue;
+mod tabs;
 
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(UiState::new())
+        app.add_plugins(SettingsPlugin)
+            .add_plugins(NotificationsPlugin)
+            .add_plugins(TopMenuPlugin)
+            .init_resource::<UiState>()
             .add_systems(PostUpdate, show_ui_system.before(EguiSet::ProcessOutput));
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum EguiTab {
     ThreeDView,
     PlotView(plot::PlotData),
@@ -42,16 +49,10 @@ impl Tab for EguiTab {
                 plot::draw_plot(ui, tab_viewer.world, plot_ui);
             }
             EguiTab::ParameterListView(group, parameter) => {
-                parameters::draw_parameters_list(
-                    ui,
-                    tab_viewer.world,
-                    tab_viewer.added_tabs,
-                    group,
-                    parameter,
-                );
+                parameters::draw_parameters_list(ui, tab_viewer.world, group, parameter);
             }
             EguiTab::DataView => {
-                data::draw_data_view(ui, tab_viewer);
+                data::draw_data_view(ui, tab_viewer.world);
             }
         }
     }
@@ -74,64 +75,30 @@ pub trait Tab {
 pub struct TabViewer<'a> {
     world: &'a mut World,
     viewport_rect: &'a mut egui::Rect,
-    added_tabs: &'a mut Vec<EguiTab>,
-    settings: &'a mut settings::GlobalUiSettings,
-    windows: &'a mut windows::Windows,
-    notifications: &'a mut NotificationQueue,
 }
 
 #[derive(Resource)]
 pub struct UiState {
     tree: DockState<EguiTab>,
     pub viewport_rect: egui::Rect,
-    settings: settings::GlobalUiSettings,
-    windows: windows::Windows,
-    pub notifications: NotificationQueue,
+}
+
+impl Default for UiState {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl UiState {
     fn ui(&mut self, world: &mut World, ctx: &mut egui::Context) {
-        let mut added_tabs = Vec::new();
-
-        self.windows
-            .show(ctx, &mut self.settings, &mut self.notifications);
-
         let mut tab_viewer = TabViewer {
             world,
             viewport_rect: &mut self.viewport_rect,
-            added_tabs: &mut added_tabs,
-            settings: &mut self.settings,
-            windows: &mut self.windows,
-            notifications: &mut self.notifications,
         };
 
         DockArea::new(&mut self.tree)
             .style(Style::from_egui(ctx.style().as_ref()))
             .show(ctx, &mut tab_viewer);
-
-        if !added_tabs.is_empty() {
-            let new_tab = added_tabs.pop().unwrap();
-            for node in self.tree.main_surface_mut().iter_mut() {
-                match node {
-                    egui_dock::Node::Leaf {
-                        rect,
-                        viewport,
-                        tabs,
-                        active,
-                        scroll,
-                    } => {
-                        for i in 0..tabs.len() {
-                            if std::mem::discriminant(&tabs[i]) == std::mem::discriminant(&new_tab)
-                            {
-                                tabs[i] = new_tab.clone();
-                                break;
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
     }
 
     pub fn new() -> Self {
@@ -153,9 +120,6 @@ impl UiState {
         Self {
             tree,
             viewport_rect: egui::Rect::NOTHING,
-            settings: settings::GlobalUiSettings::default(),
-            windows: windows::Windows::default(),
-            notifications: NotificationQueue::default(),
         }
     }
 }
@@ -190,16 +154,53 @@ pub fn show_ui_system(world: &mut World) {
     });
 }
 
-pub fn get_c3d(world: &mut World) -> Option<&C3d> {
-    let c3d_state = world.get_resource::<C3dState>();
-    if let Some(c3d_state) = c3d_state {
-        let c3d_asset = world.get_resource::<Assets<C3dAsset>>();
-        if let Some(c3d_asset) = c3d_asset {
-            let c3d_asset = c3d_asset.get(&c3d_state.handle);
-            if let Some(c3d_asset) = c3d_asset {
-                return Some(&c3d_asset.c3d);
+pub fn add_tabs_system(
+    mut ui_state: ResMut<UiState>,
+    mut add_tab_events: EventReader<AddTabEvent>,
+) {
+    for event in add_tab_events.read() {
+        let new_tab = event.tab.clone();
+        let mut found_tab = None;
+        let mut tree = ui_state.tree.clone();
+        for node in tree.main_surface_mut().iter_mut() {
+            match node {
+                egui_dock::Node::Leaf {
+                    rect,
+                    viewport,
+                    tabs,
+                    active,
+                    scroll,
+                } => {
+                    for i in 0..tabs.len() {
+                        if std::mem::discriminant(&tabs[i]) == std::mem::discriminant(&new_tab) {
+                            let tree = ui_state.tree.clone();
+                            found_tab = Some(tree.find_tab(&tabs[i]).unwrap());
+                            if let Some(found_tab) = found_tab {
+                                ui_state
+                                    .tree
+                                    .set_focused_node_and_surface((found_tab.0, found_tab.1));
+                                ui_state.tree.set_active_tab(found_tab);
+                            }
+                            break;
+                        }
+                    }
+                    if found_tab.is_some() {
+                        break;
+                    }
+                }
+                _ => {}
             }
         }
+        if found_tab.is_none() {
+            ui_state
+                .tree
+                .main_surface_mut()
+                .push_to_focused_leaf(new_tab);
+        }
     }
-    None
+}
+
+#[derive(Event)]
+pub struct AddTabEvent {
+    tab: EguiTab,
 }

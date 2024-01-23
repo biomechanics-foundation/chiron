@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use egui_plot::{Line, Plot, PlotPoints};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PlotData {
     pub title: String,
     pub data: Vec<[f64; 2]>,

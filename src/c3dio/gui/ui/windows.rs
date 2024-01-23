@@ -1,38 +1,22 @@
 use super::notifications;
 use super::settings;
+use bevy::prelude::*;
 
-pub struct Windows {
-    pub settings: settings::SettingsUi,
-    pub notifications: notifications::NotificationUi,
-}
-
-impl Default for Windows {
-    fn default() -> Self {
-        Self {
-            settings: settings::SettingsUi::default(),
-            notifications: notifications::NotificationUi::default(),
-        }
-    }
-}
+#[derive(Default)]
+pub struct Windows;
 
 impl Windows {
-    pub fn show(
-        &mut self,
-        ctx: &mut egui::Context,
-        settings: &mut settings::GlobalUiSettings,
-        notifications: &mut notifications::NotificationQueue,
-    ) {
-        self.settings.ui(ctx, settings, notifications);
-        self.notifications.ui(ctx, settings, notifications);
+    pub fn show(&mut self, world: &mut World, ctx: &mut egui::Context) {
+        world.resource_scope::<settings::Settings, _>(|world, mut settings| {
+            settings.ui(world, ctx);
+        });
+        world.resource_scope::<notifications::Notifications, _>(|world, mut notifications| {
+            notifications.ui(world, ctx);
+        });
     }
 }
 
 pub trait Window {
-    fn ui(
-        &mut self,
-        ctx: &mut egui::Context,
-        settings: &mut settings::GlobalUiSettings,
-        notifications: &mut notifications::NotificationQueue,
-    );
+    fn ui(&mut self, world: &mut World, ctx: &mut egui::Context);
     fn title(&mut self) -> egui::WidgetText;
 }
