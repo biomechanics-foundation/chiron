@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use egui::TopBottomPanel;
 use bevy_egui::EguiContext;
 use bevy::window::PrimaryWindow;
-use super::AddTabEvent;
+use super::tabs::AddTabEvent;
 use super::plot::PlotData;
 use super::EguiTab;
 

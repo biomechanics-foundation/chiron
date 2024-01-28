@@ -1,4 +1,5 @@
-use super::{AddTabEvent, EguiTab};
+use super::EguiTab;
+use super::tabs::AddTabEvent;
 use bevy::prelude::*;
 use bevy_c3d::prelude::*;
 use egui_extras::{Column, TableBuilder};

@@ -1,15 +1,8 @@
-use super::State;
 use crate::gui::ui::notifications::Notifications;
 use crate::ui::notifications::{Icon, Toast};
-use crate::ui::UiState;
+use crate::visualizer::C3dFrame;
 use bevy::prelude::*;
 use bevy_c3d::*;
-
-pub fn update_c3d(mut state: ResMut<State>) {
-    if state.updated_frame {
-        state.updated_frame = false;
-    }
-}
 
 pub fn c3d_drag_and_drop(
     mut events: EventReader<FileDragAndDrop>,
@@ -87,29 +80,28 @@ pub fn load_c3d(
 pub struct Marker;
 
 pub fn markers(
-    state: ResMut<State>,
+    c3d_frame: Res<C3dFrame>,
     mut query: Query<(&mut Transform, &Marker)>,
     c3d_state: ResMut<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
 ) {
-    if !state.updated_frame {
+    if !c3d_frame.updated() {
+        return;
+    }
+    if !c3d_state.loaded {
         return;
     }
     let asset = c3d_assets.get(&c3d_state.handle);
     match asset {
         Some(asset) => {
             let point_data = &asset.c3d.points.points;
-            if state.frame >= point_data.rows() {
-                return;
-            }
-            let mut i = 0;
-            for (mut transform, _) in query.iter_mut() {
+            let frame = c3d_frame.frame() as usize;
+            for (i, (mut transform, _)) in query.iter_mut().enumerate() {
                 transform.translation = Vec3::new(
-                    point_data[state.frame][i][0] as f32 / 1000.0,
-                    point_data[state.frame][i][1] as f32 / 1000.0,
-                    point_data[state.frame][i][2] as f32 / 1000.0,
+                    point_data[frame][i][0] as f32 / 1000.0,
+                    point_data[frame][i][1] as f32 / 1000.0,
+                    point_data[frame][i][2] as f32 / 1000.0,
                 );
-                i += 1;
             }
         }
         None => {}

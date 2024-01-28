@@ -34,10 +34,9 @@ pub fn draw_plot(ui: &mut egui::Ui, world: &mut World, plot_ui: &mut PlotData) {
     let plot = Plot::new("my_plot").show(ui, |plot_ui| plot_ui.line(line));
     if plot.response.hovered() {
         if let Some(pos) = plot.response.hover_pos() {
-            let state = world.get_resource_mut::<crate::visualizer::State>();
-            if let Some(mut state) = state {
-                state.frame = plot.transform.value_from_position(pos).x as usize;
-                state.updated_frame = true;
+            let c3d_frame = world.get_resource_mut::<crate::ui::bottom_menu::C3dFrame>();
+            if let Some(mut c3d_frame) = c3d_frame {
+                c3d_frame.update_frame(plot.transform.value_from_position(pos).x as f32);
             }
         }
     }

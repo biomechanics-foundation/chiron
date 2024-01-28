@@ -7,6 +7,7 @@ use egui_dock::{DockArea, DockState, NodeIndex, Style};
 use self::notifications::NotificationsPlugin;
 use self::settings::SettingsPlugin;
 use self::top_menu::TopMenuPlugin;
+use self::bottom_menu::BottomMenuPlugin;
 
 mod data;
 pub mod notifications;
@@ -15,6 +16,7 @@ mod plot;
 mod settings;
 mod three_d;
 mod top_menu;
+pub mod bottom_menu;
 mod windows;
 mod tabs;
 
@@ -25,6 +27,7 @@ impl Plugin for UiPlugin {
         app.add_plugins(SettingsPlugin)
             .add_plugins(NotificationsPlugin)
             .add_plugins(TopMenuPlugin)
+            .add_plugins(BottomMenuPlugin)
             .init_resource::<UiState>()
             .add_systems(PostUpdate, show_ui_system.before(EguiSet::ProcessOutput));
     }

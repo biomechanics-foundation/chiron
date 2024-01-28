@@ -1,3 +1,4 @@
+use crate::ui::bottom_menu::C3dFrame;
 use bevy::prelude::*;
 use bevy::{
     //    gltf::GltfPlugin,
@@ -28,10 +29,10 @@ use bevy::{
     winit::WinitPlugin,
 };
 
-mod camera;
 mod c3d;
-mod lighting;
+mod camera;
 mod force_plate;
+mod lighting;
 
 pub struct VisualizerPlugin;
 
@@ -41,19 +42,12 @@ impl Plugin for VisualizerPlugin {
             .add_plugins(camera::CameraPlugin)
             .add_plugins(bevy_c3d::C3dPlugin)
             .add_systems(Startup, lighting::setup)
-            .add_systems(PostUpdate, c3d::update_c3d)
             .add_systems(Update, c3d::c3d_drag_and_drop)
             .add_systems(Update, c3d::load_c3d)
             .add_systems(Update, c3d::markers)
             .add_plugins(force_plate::ForcePlatePlugin)
-            .init_resource::<State>();
+            .init_resource::<C3dFrame>();
     }
-}
-
-#[derive(Resource, Default, Debug)]
-pub struct State {
-    pub frame: usize,
-    pub updated_frame: bool,
 }
 
 struct VisualizerPlugins;
@@ -85,4 +79,3 @@ impl Plugin for VisualizerPlugins {
             .add_plugins(AnimationPlugin::default());
     }
 }
-

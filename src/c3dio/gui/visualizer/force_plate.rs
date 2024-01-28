@@ -1,4 +1,4 @@
-use super::State;
+use super::C3dFrame;
 use bevy::prelude::*;
 use bevy_c3d::prelude::*;
 
@@ -86,20 +86,23 @@ pub fn add_force_plates(
 }
 
 pub fn update_force_vectors(
-    state: ResMut<State>,
+    c3d_frame: ResMut<C3dFrame>,
     mut query: Query<(&mut Transform, &ForceVector)>,
     c3d_state: Res<C3dState>,
     c3d_assets: Res<Assets<C3dAsset>>,
 ) {
-    if state.updated_frame {
+    if c3d_frame.updated() {
         let asset = c3d_assets.get(&c3d_state.handle);
         match asset {
             Some(asset) => {
                 for (mut transform, force_vector) in query.iter_mut() {
-                    let force = asset.c3d.force(force_vector.force_plate_index, state.frame);
-                    let center_of_pressure = asset
+                    let force = asset
                         .c3d
-                        .center_of_pressure(force_vector.force_plate_index, state.frame);
+                        .force(force_vector.force_plate_index, c3d_frame.frame() as usize);
+                    let center_of_pressure = asset.c3d.center_of_pressure(
+                        force_vector.force_plate_index,
+                        c3d_frame.frame() as usize,
+                    );
                     let origin = asset.c3d.forces.origin(force_vector.force_plate_index);
                     if force.is_none() || center_of_pressure.is_none() || origin.is_none() {
                         continue;

@@ -1,6 +1,6 @@
 use super::notifications::Toast;
 use super::plot::PlotData;
-use super::AddTabEvent;
+use super::tabs::AddTabEvent;
 use super::EguiTab;
 use bevy::prelude::*;
 use bevy_c3d::prelude::*;

@@ -1,6 +1,6 @@
-use bevy::prelude::*;
-use super::UiState;
 use super::EguiTab;
+use super::UiState;
+use bevy::prelude::*;
 
 pub struct TabsPlugin;
 
@@ -13,7 +13,7 @@ impl Plugin for TabsPlugin {
 
 #[derive(Event)]
 pub struct AddTabEvent {
-    tab: EguiTab,
+    pub tab: EguiTab,
 }
 
 pub fn add_tabs_system(
