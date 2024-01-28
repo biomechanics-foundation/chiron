@@ -4,8 +4,11 @@ use bevy_c3d::prelude::*;
 use bevy_egui::EguiContext;
 use c3dio::c3d;
 use egui::widgets::Button;
+use egui::DragValue;
 use egui::RichText;
+use egui::Slider;
 use egui::TopBottomPanel;
+use egui::Visuals;
 
 pub struct BottomMenuPlugin;
 
@@ -18,10 +21,21 @@ impl Plugin for BottomMenuPlugin {
     }
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct PlayerControl {
     pub is_playing: bool,
     pub loop_playback: bool,
+    pub playback_speed: f32,
+}
+
+impl Default for PlayerControl {
+    fn default() -> Self {
+        Self {
+            is_playing: false,
+            loop_playback: false,
+            playback_speed: 1.,
+        }
+    }
 }
 
 #[derive(Resource, Default, Debug)]
@@ -67,7 +81,9 @@ pub fn update_frame(
         Some(asset) => {
             if player_control.is_playing {
                 c3d_frame.frame = c3d_frame.frame
-                    + (time.delta().as_secs_f32() * asset.c3d.points.frame_rate) as f32;
+                    + (time.delta().as_secs_f32()
+                        * asset.c3d.points.frame_rate
+                        * player_control.playback_speed) as f32;
                 c3d_frame.new_frame = c3d_frame.frame;
                 c3d_frame.updated_frame = true;
             }
@@ -151,6 +167,22 @@ pub fn bottom_menu_system(world: &mut World) {
                         }
                         //  ui.button(RichText::new("⏭").size(24.))
                         //      .on_hover_text("Last frame");
+                        ui.separator();
+                        ui.label("Speed:");
+                        ui.add(
+                            DragValue::new(&mut player_control.playback_speed)
+                                .speed(0.025)
+                                .clamp_range(0.01..=1.),
+                        );
+                        ui.separator();
+                        ui.label(format!("Frame: {:.2}", c3d_frame.frame()));
+                        //https://github.com/emilk/egui/discussions/3908
+                        ui.add(
+                            Slider::new(&mut c3d_frame.frame, 0.0..=1000.0)
+                                .clamp_to_range(true)
+                                .fixed_decimals(0)
+                                .handle_shape(egui::style::HandleShape::Rect { aspect_ratio: 0.25 }),
+                        );
                     });
                 });
         });
