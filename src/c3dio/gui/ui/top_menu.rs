@@ -35,6 +35,16 @@ pub fn top_menu_system(world: &mut World) {
                         tab: EguiTab::ThreeDView,
                     });
                 }
+                if ui.button("Marker Data").clicked() {
+                    world.send_event(AddTabEvent {
+                        tab: EguiTab::MarkerDataView,
+                    });
+                }
+                if ui.button("Analog Data").clicked() {
+                    world.send_event(AddTabEvent {
+                        tab: EguiTab::AnalogDataView,
+                    });
+                }
                 if ui.button("Plot").clicked() {
                     world.send_event(AddTabEvent {
                         tab: EguiTab::PlotView(PlotData::default()),
@@ -43,11 +53,6 @@ pub fn top_menu_system(world: &mut World) {
                 if ui.button("Parameters").clicked() {
                     world.send_event(AddTabEvent {
                         tab: EguiTab::ParameterListView("".into(), "".into()),
-                    });
-                }
-                if ui.button("Data").clicked() {
-                    world.send_event(AddTabEvent {
-                        tab: EguiTab::DataView,
                     });
                 }
             });

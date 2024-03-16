@@ -17,9 +17,7 @@ impl Plugin for SettingsPlugin {
 }
 
 #[derive(Resource, Default)]
-pub struct Settings {
-    pub plot_line_color: Color32,
-}
+pub struct Settings;
 
 #[derive(Resource, Default)]
 pub struct SettingsMenuIsOpen(pub bool);

@@ -6,10 +6,12 @@ use egui_dock::{DockArea, DockState, NodeIndex, Style};
 
 use self::notifications::NotificationsPlugin;
 use self::settings::SettingsPlugin;
+use self::tabs::TabsPlugin;
 use self::top_menu::TopMenuPlugin;
 use self::bottom_menu::BottomMenuPlugin;
 
-mod data;
+mod marker_data;
+mod analog_data;
 pub mod notifications;
 mod parameters;
 mod plot;
@@ -27,6 +29,7 @@ impl Plugin for UiPlugin {
         app.add_plugins(SettingsPlugin)
             .add_plugins(NotificationsPlugin)
             .add_plugins(TopMenuPlugin)
+            .add_plugins(TabsPlugin)
             .add_plugins(BottomMenuPlugin)
             .init_resource::<UiState>()
             .add_systems(PostUpdate, show_ui_system.before(EguiSet::ProcessOutput));
@@ -38,7 +41,8 @@ pub enum EguiTab {
     ThreeDView,
     PlotView(plot::PlotData),
     ParameterListView(String, String),
-    DataView,
+    MarkerDataView,
+    AnalogDataView,
 }
 
 impl Tab for EguiTab {
@@ -54,8 +58,11 @@ impl Tab for EguiTab {
             EguiTab::ParameterListView(group, parameter) => {
                 parameters::draw_parameters_list(ui, tab_viewer.world, group, parameter);
             }
-            EguiTab::DataView => {
-                data::draw_data_view(ui, tab_viewer.world);
+            EguiTab::MarkerDataView => {
+                marker_data::draw_marker_data_view(ui, tab_viewer.world);
+            }
+            EguiTab::AnalogDataView => {
+                analog_data::draw_analog_data_view(ui, tab_viewer.world);
             }
         }
     }
@@ -65,7 +72,8 @@ impl Tab for EguiTab {
             EguiTab::ThreeDView => "3D View".into(),
             EguiTab::PlotView(plot_ui) => "Plot".into(),
             EguiTab::ParameterListView(group, parameter) => "Parameters".into(),
-            EguiTab::DataView => "Data".into(),
+            EguiTab::MarkerDataView => "Marker Data".into(),
+            EguiTab::AnalogDataView => "Analog Data".into(),
         }
     }
 }
@@ -110,7 +118,8 @@ impl UiState {
             NodeIndex::root(),
             0.2,
             vec![
-                EguiTab::DataView,
+                EguiTab::MarkerDataView,
+                EguiTab::AnalogDataView,
                 //              EguiTab::ParameterListView("".into(), "".into()),
             ],
         );

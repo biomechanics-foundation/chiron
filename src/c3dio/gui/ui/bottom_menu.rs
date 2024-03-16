@@ -2,13 +2,11 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_c3d::prelude::*;
 use bevy_egui::EguiContext;
-use c3dio::c3d;
 use egui::widgets::Button;
 use egui::DragValue;
 use egui::RichText;
 use egui::Slider;
 use egui::TopBottomPanel;
-use egui::Visuals;
 
 pub struct BottomMenuPlugin;
 
@@ -136,7 +134,7 @@ pub fn bottom_menu_system(world: &mut World) {
                         }
                         if ui
                             .add(
-                                Button::new(RichText::new("⏯").size(24.))
+                                Button::new(RichText::new("▶").size(24.))
                                     .selected(player_control.is_playing),
                             )
                             .on_hover_text("Play/Pause")
@@ -172,10 +170,10 @@ pub fn bottom_menu_system(world: &mut World) {
                         ui.add(
                             DragValue::new(&mut player_control.playback_speed)
                                 .speed(0.025)
-                                .clamp_range(0.01..=1.),
+                                .clamp_range(0.05..=1.),
                         );
                         ui.separator();
-                        ui.label(format!("Frame: {:.2}", c3d_frame.frame()));
+                        ui.label(format!("Frame: {:.0}", c3d_frame.frame()));
                         //https://github.com/emilk/egui/discussions/3908
                         ui.add(
                             Slider::new(&mut c3d_frame.frame, 0.0..=1000.0)
