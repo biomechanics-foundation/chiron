@@ -1,9 +1,11 @@
 use super::notifications::Toast;
 use super::plot::PlotData;
+use super::settings::StripedTable;
 use super::tabs::AddTabEvent;
 use super::EguiTab;
 use bevy::prelude::*;
 use bevy_c3d::prelude::*;
+use egui_extras::{Column, TableBuilder};
 
 pub fn draw_marker_data_view(ui: &mut egui::Ui, world: &mut World) {
     let c3d_loaded = world.resource_scope::<C3dState, bool>(|world, c3d_state| {
@@ -30,38 +32,58 @@ pub fn draw_marker_data_view(ui: &mut egui::Ui, world: &mut World) {
 }
 
 fn draw_marker_data(ui: &mut egui::Ui, world: &mut World, c3d: &C3d) {
-//    let mut table = TableBuilder::new(ui).
-    for i in 0..c3d.points.points.cols() {
-        ui.push_id(i, |ui| {
-            let marker = if let Some(label) = c3d.points.labels.get(i) {
-                label
-            } else {
-                "Unknown"
-            };
-            ui.collapsing(marker, |ui| {
-                for (j, dimension) in ["X", "Y", "Z"].iter().enumerate() {
-                    let data = c3d
-                        .points
-                        .iter_col(i)
-                        .enumerate()
-                        .map(|(i, v)| match j {
-                            0 => [i as f64, v[0] as f64],
-                            1 => [i as f64, v[1] as f64],
-                            2 => [i as f64, v[2] as f64],
-                            _ => unreachable!(),
-                        })
-                        .collect();
-                    if ui.button(dimension.to_owned()).clicked() {
-                        world.send_event(AddTabEvent {
-                            tab: EguiTab::PlotView(PlotData {
-                                title: format!("{} {}", marker, dimension),
-                                data,
-                            }),
-                        });
-                        world.send_event(Toast::info(format!("{} {}", marker, dimension).as_str()));
-                    }
-                }
+    world.resource_scope::<StripedTable, _>(|world, striped_table| {
+        TableBuilder::new(ui)
+            .striped(striped_table.0)
+            .resizable(true)
+            .column(Column::initial(40.0).at_least(40.0).clip(true))
+            .column(Column::remainder())
+            .header(20.0, |mut header| {
+                header.col(|ui| {
+                    ui.label("#");
+                });
+                header.col(|ui| {
+                    ui.label("Marker Name");
+                });
+            })
+            .body(|mut body| {
+                body.rows(18.0, c3d.points.points.cols(), |mut row| {
+                    let i = row.index();
+                    row.col(|ui| {
+                        ui.label(i.to_string());
+                    });
+                    row.col(|ui| {
+                        let marker = if let Some(label) = c3d.points.labels.get(i) {
+                            label
+                        } else {
+                            "Unknown"
+                        };
+                        if ui.button(marker).clicked() {
+                            for (j, dimension) in ["X", "Y", "Z"].iter().enumerate() {
+                                let data = c3d
+                                    .points
+                                    .iter_col(i)
+                                    .enumerate()
+                                    .map(|(i, v)| match j {
+                                        0 => [i as f64, v[0] as f64],
+                                        1 => [i as f64, v[1] as f64],
+                                        2 => [i as f64, v[2] as f64],
+                                        _ => unreachable!(),
+                                    })
+                                    .collect();
+                                world.send_event(AddTabEvent {
+                                    tab: EguiTab::PlotView(PlotData {
+                                        title: format!("{} {}", marker, dimension),
+                                        data,
+                                    }),
+                                });
+                                world.send_event(Toast::info(
+                                    format!("{} {}", marker, dimension).as_str(),
+                                ));
+                            }
+                        }
+                    });
+                });
             });
-        });
-    }
+    });
 }

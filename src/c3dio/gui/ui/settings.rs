@@ -12,6 +12,7 @@ impl Plugin for SettingsPlugin {
         app.init_resource::<Settings>()
             .init_resource::<SettingsMenuIsOpen>()
             .init_resource::<PlotLineColor>()
+            .init_resource::<StripedTable>()
             .add_systems(Update, settings::show_settings_system);
     }
 }
@@ -24,6 +25,9 @@ pub struct SettingsMenuIsOpen(pub bool);
 
 #[derive(Resource, Default)]
 pub struct PlotLineColor(pub Color32);
+
+#[derive(Resource, Default)]
+pub struct StripedTable(pub bool);
 
 impl Window for Settings {
     fn ui(&mut self, world: &mut World, ctx: &mut egui::Context) {

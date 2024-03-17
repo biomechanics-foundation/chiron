@@ -1,16 +1,18 @@
-use bevy::prelude::*;
-use egui::TopBottomPanel;
-use bevy_egui::EguiContext;
-use bevy::window::PrimaryWindow;
-use super::tabs::AddTabEvent;
+use super::io::{IoPlugin, LoadFileEvent};
 use super::plot::PlotData;
+use super::tabs::AddTabEvent;
 use super::EguiTab;
+use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
+use bevy_egui::EguiContext;
+use egui::TopBottomPanel;
 
 pub struct TopMenuPlugin;
 
 impl Plugin for TopMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, top_menu_system);
+        app.add_plugins(IoPlugin)
+            .add_systems(Update, top_menu_system);
     }
 }
 
@@ -26,7 +28,9 @@ pub fn top_menu_system(world: &mut World) {
     TopBottomPanel::top("top_panel").show(ctx.get_mut(), |ui| {
         egui::menu::bar(ui, |ui| {
             ui.menu_button("File", |ui| {
-                if ui.button("Open").clicked() {}
+                if ui.button("Open").clicked() {
+                    world.send_event(LoadFileEvent);
+                }
                 if ui.button("Save").clicked() {}
             });
             ui.menu_button("View", |ui| {

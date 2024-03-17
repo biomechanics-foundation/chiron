@@ -7,6 +7,7 @@ mod pan_orbit;
 use crate::ui;
 use pan_orbit::pan_orbit_camera;
 use pan_orbit::PanOrbitCamera;
+use bevy_egui::EguiSettings;
 
 pub struct CameraPlugin;
 

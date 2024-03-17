@@ -21,6 +21,7 @@ mod top_menu;
 pub mod bottom_menu;
 mod windows;
 mod tabs;
+mod io;
 
 pub struct UiPlugin;
 

@@ -109,13 +109,7 @@ pub fn add_markers(
         );
         commands.spawn((
             PbrBundle {
-                mesh: meshes.add(
-                    shape::UVSphere {
-                        radius: 0.01,
-                        ..default()
-                    }
-                    .into(),
-                ),
+                mesh: meshes.add(Sphere::new(0.01).mesh()),
                 material: materials.add(StandardMaterial {
                     base_color: Color::rgb_u8(255, 0, 255),
                     ..default()
