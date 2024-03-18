@@ -30,7 +30,7 @@ use bevy::{
 };
 use winit::window::Icon;
 
-mod c3d;
+pub mod c3d;
 mod camera;
 mod force_plate;
 mod lighting;

@@ -12,8 +12,8 @@ readme = "README.md"
 keywords = ["biomechanics", "simulation", "game-development", "physics", "mathematics"]
 
 [dependencies]
-c3dio = "0.7.0"
-bevy_c3d = "0.13"
+c3dio = { path = "../c3dio", version = "0.7.0" }
+bevy_c3d = { path = "../bevy_c3d", version = "0.13.0" }
 
 bevy = "0.13"
 bevy_egui = "0.25"
