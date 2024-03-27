@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_c3d::prelude::*;
 use bevy_egui::EguiContext;
+use c3dio::c3d;
 use egui::widgets::Button;
 use egui::DragValue;
 use egui::RichText;
@@ -112,77 +113,102 @@ pub fn bottom_menu_system(world: &mut World) {
     let mut ctx = egui_context.clone();
 
     world.resource_scope::<PlayerControl, _>(|world, mut player_control| {
-        world.resource_scope::<C3dFrame, _>(|_, mut c3d_frame| {
-            TopBottomPanel::bottom("bottom_panel")
-                .exact_height(48.)
-                .show(ctx.get_mut(), |ui| {
-                    ui.horizontal_centered(|ui| {
-                        //  ui.button(RichText::new("⏮").size(24.))
-                        //      .on_hover_text("First frame");
-                        if ui
-                            .button(RichText::new("⏪").size(24.))
-                            .on_hover_text("Previous frame")
-                            .clicked()
-                        {
-                            if c3d_frame.frame() > 0. {
+        world.resource_scope::<C3dFrame, _>(|world, mut c3d_frame| {
+            world.resource_scope::<C3dState, _>(|world, c3d_state| {
+                let c3d_asset = world.get_resource::<Assets<C3dAsset>>();
+                let max_frames = match c3d_asset {
+                    Some(c3d_asset) => {
+                        let c3d_asset = c3d_asset.get(&c3d_state.handle);
+                        match c3d_asset {
+                            Some(c3d_asset) => c3d_asset.c3d.points.rows() as f32,
+                            None => 0.,
+                        }
+                    }
+                    None => 0.,
+                };
+                TopBottomPanel::bottom("bottom_panel")
+                    .exact_height(48.)
+                    .show(ctx.get_mut(), |ui| {
+                        ui.horizontal_centered(|ui| {
+                            //  ui.button(RichText::new("⏮").size(24.))
+                            //      .on_hover_text("First frame");
+                            if ui
+                                .button(RichText::new("⏪").size(24.))
+                                .on_hover_text("Previous frame")
+                                .clicked()
+                            {
+                                if c3d_frame.frame() > 0. {
+                                    let frame = c3d_frame.frame();
+                                    c3d_frame.update_frame(frame - 1.);
+                                    if player_control.is_playing {
+                                        player_control.is_playing = false;
+                                    }
+                                }
+                            }
+                            if ui
+                                .add(
+                                    Button::new(RichText::new("▶").size(24.))
+                                        .selected(player_control.is_playing),
+                                )
+                                .on_hover_text("Play/Pause")
+                                .clicked()
+                            {
+                                player_control.is_playing = !player_control.is_playing;
+                            }
+                            if ui
+                                .button(RichText::new("⏩").size(24.))
+                                .on_hover_text("Next frame")
+                                .clicked()
+                            {
                                 let frame = c3d_frame.frame();
-                                c3d_frame.update_frame(frame - 1.);
+                                c3d_frame.update_frame(frame + 1.);
                                 if player_control.is_playing {
                                     player_control.is_playing = false;
                                 }
                             }
-                        }
-                        if ui
-                            .add(
-                                Button::new(RichText::new("▶").size(24.))
-                                    .selected(player_control.is_playing),
-                            )
-                            .on_hover_text("Play/Pause")
-                            .clicked()
-                        {
-                            player_control.is_playing = !player_control.is_playing;
-                        }
-                        if ui
-                            .button(RichText::new("⏩").size(24.))
-                            .on_hover_text("Next frame")
-                            .clicked()
-                        {
-                            let frame = c3d_frame.frame();
-                            c3d_frame.update_frame(frame + 1.);
-                            if player_control.is_playing {
-                                player_control.is_playing = false;
+                            if ui
+                                .add(
+                                    Button::new(RichText::new("🔁").size(24.))
+                                        .selected(player_control.loop_playback),
+                                )
+                                .on_hover_text("Loop playback")
+                                .clicked()
+                            {
+                                player_control.loop_playback = !player_control.loop_playback;
                             }
-                        }
-                        if ui
-                            .add(
-                                Button::new(RichText::new("🔁").size(24.))
-                                    .selected(player_control.loop_playback),
-                            )
-                            .on_hover_text("Loop playback")
-                            .clicked()
-                        {
-                            player_control.loop_playback = !player_control.loop_playback;
-                        }
-                        //  ui.button(RichText::new("⏭").size(24.))
-                        //      .on_hover_text("Last frame");
-                        ui.separator();
-                        ui.label("Speed:");
-                        ui.add(
-                            DragValue::new(&mut player_control.playback_speed)
-                                .speed(0.025)
-                                .clamp_range(0.05..=1.),
-                        );
-                        ui.separator();
-                        ui.label(format!("Frame: {:.0}", c3d_frame.frame()));
-                        //https://github.com/emilk/egui/discussions/3908
-                        ui.add(
-                            Slider::new(&mut c3d_frame.frame, 0.0..=1000.0)
-                                .clamp_to_range(true)
-                                .fixed_decimals(0)
-                                .handle_shape(egui::style::HandleShape::Rect { aspect_ratio: 0.25 }),
-                        );
+                            //  ui.button(RichText::new("⏭").size(24.))
+                            //      .on_hover_text("Last frame");
+                            ui.separator();
+                            ui.label("Speed:");
+                            ui.add(
+                                DragValue::new(&mut player_control.playback_speed)
+                                    .speed(0.025)
+                                    .clamp_range(0.05..=1.),
+                            );
+                            ui.separator();
+                            ui.label("Frame:");
+                            //https://github.com/emilk/egui/discussions/3908
+                            ui.spacing_mut().slider_width = 300.0;
+                            ui.add(
+                                Slider::from_get_set(0.0..=max_frames as f64, |x| {
+                                    match x {
+                                        Some(x) => {
+                                            c3d_frame.update_frame(x as f32);
+                                        }
+                                        None => {}
+                                    }
+                                    c3d_frame.frame as f64
+                                })
+                                    .clamp_to_range(true)
+                                    .fixed_decimals(0)
+                                    .trailing_fill(true)
+                                    .handle_shape(egui::style::HandleShape::Rect {
+                                        aspect_ratio: 0.33,
+                                    }),
+                            );
+                        });
                     });
-                });
+            });
         });
     });
 }

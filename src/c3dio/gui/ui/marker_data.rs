@@ -36,7 +36,7 @@ fn draw_marker_data(ui: &mut egui::Ui, world: &mut World, c3d: &C3d) {
         TableBuilder::new(ui)
             .striped(striped_table.0)
             .resizable(true)
-            .column(Column::initial(40.0).at_least(40.0).clip(true))
+            .column(Column::initial(30.0).at_least(30.0).clip(true))
             .column(Column::remainder())
             .header(20.0, |mut header| {
                 header.col(|ui| {
@@ -46,7 +46,7 @@ fn draw_marker_data(ui: &mut egui::Ui, world: &mut World, c3d: &C3d) {
                     ui.label("Marker Name");
                 });
             })
-            .body(|mut body| {
+            .body(|body| {
                 body.rows(18.0, c3d.points.points.cols(), |mut row| {
                     let i = row.index();
                     row.col(|ui| {

@@ -1,6 +1,6 @@
 use crate::gui::ui::notifications::Notifications;
 use crate::ui::notifications::Toast;
-use crate::visualizer::c3d::Marker;
+use crate::visualizer::marker::Marker;
 use bevy::prelude::*;
 use bevy_c3d::*;
 use rfd::FileDialog;
@@ -116,6 +116,9 @@ fn close_c3d_system(
     entities: Query<Entity, With<Marker>>,
     ) {
     for _ in events.read() {
+        if !c3d_state.loaded {
+            return;
+        }
         c3d_state.loaded = false;
         c3d_state.path = "".to_string();
         c3d_assets.remove(&c3d_state.handle);

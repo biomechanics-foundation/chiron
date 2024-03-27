@@ -4,24 +4,25 @@ use bevy_egui::EguiContext;
 use bevy_egui::EguiSet;
 use egui_dock::{DockArea, DockState, NodeIndex, Style};
 
+use self::bottom_menu::BottomMenuPlugin;
 use self::notifications::NotificationsPlugin;
 use self::settings::SettingsPlugin;
 use self::tabs::TabsPlugin;
 use self::top_menu::TopMenuPlugin;
-use self::bottom_menu::BottomMenuPlugin;
 
-mod marker_data;
 mod analog_data;
+mod force_data;
+pub mod bottom_menu;
+mod io;
+mod marker_data;
 pub mod notifications;
 mod parameters;
 mod plot;
 mod settings;
+mod tabs;
 mod three_d;
 mod top_menu;
-pub mod bottom_menu;
 mod windows;
-mod tabs;
-mod io;
 
 pub struct UiPlugin;
 
@@ -44,6 +45,7 @@ pub enum EguiTab {
     ParameterListView(String, String),
     MarkerDataView,
     AnalogDataView,
+    ForceDataView,
 }
 
 impl Tab for EguiTab {
@@ -65,16 +67,20 @@ impl Tab for EguiTab {
             EguiTab::AnalogDataView => {
                 analog_data::draw_analog_data_view(ui, tab_viewer.world);
             }
+            EguiTab::ForceDataView => {
+                force_data::draw_force_data_view(ui, tab_viewer.world);
+            }
         }
     }
 
     fn title(&mut self) -> egui::WidgetText {
         match self {
-            EguiTab::ThreeDView => "3D View".into(),
+            EguiTab::ThreeDView => "3D Viewer".into(),
             EguiTab::PlotView(plot_ui) => "Plot".into(),
             EguiTab::ParameterListView(group, parameter) => "Parameters".into(),
-            EguiTab::MarkerDataView => "Marker Data".into(),
-            EguiTab::AnalogDataView => "Analog Data".into(),
+            EguiTab::MarkerDataView => "Markers".into(),
+            EguiTab::AnalogDataView => "Analog".into(),
+            EguiTab::ForceDataView => "Forces".into(),
         }
     }
 }
@@ -121,6 +127,7 @@ impl UiState {
             vec![
                 EguiTab::MarkerDataView,
                 EguiTab::AnalogDataView,
+                EguiTab::ForceDataView,
                 //              EguiTab::ParameterListView("".into(), "".into()),
             ],
         );
@@ -166,5 +173,3 @@ pub fn show_ui_system(world: &mut World) {
         ui_state.ui(world, egui_context.get_mut())
     });
 }
-
-

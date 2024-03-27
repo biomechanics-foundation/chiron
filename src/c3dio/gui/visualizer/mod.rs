@@ -27,12 +27,14 @@ use bevy::{
     ui::UiPlugin,
     window::WindowPlugin,
     winit::{WinitPlugin, WinitWindows},
+    gizmos::GizmoPlugin,
 };
 use winit::window::Icon;
 
 pub mod c3d;
 mod camera;
-mod force_plate;
+pub mod force_plate;
+pub mod marker;
 mod lighting;
 
 pub struct VisualizerPlugin;
@@ -46,7 +48,7 @@ impl Plugin for VisualizerPlugin {
             .add_systems(Startup, lighting::setup)
             .add_systems(Update, c3d::c3d_drag_and_drop)
             .add_systems(Update, c3d::load_c3d)
-            .add_systems(Update, c3d::markers)
+            .add_plugins(marker::MarkerPlugin)
             .add_plugins(force_plate::ForcePlatePlugin)
             .init_resource::<C3dFrame>();
     }
@@ -84,7 +86,8 @@ impl Plugin for VisualizerPlugins {
             .add_plugins(TextPlugin::default())
             .add_plugins(UiPlugin::default())
             .add_plugins(PbrPlugin::default())
-            .add_plugins(AnimationPlugin::default());
+            .add_plugins(AnimationPlugin::default())
+            .add_plugins(GizmoPlugin);
     }
 }
 
