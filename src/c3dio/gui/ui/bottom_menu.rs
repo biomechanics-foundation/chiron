@@ -203,7 +203,7 @@ pub fn bottom_menu_system(world: &mut World) {
                                     .fixed_decimals(0)
                                     .trailing_fill(true)
                                     .handle_shape(egui::style::HandleShape::Rect {
-                                        aspect_ratio: 0.33,
+                                        aspect_ratio: 0.5,
                                     }),
                             );
                         });

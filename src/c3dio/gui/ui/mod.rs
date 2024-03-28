@@ -30,6 +30,7 @@ impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(SettingsPlugin)
             .add_plugins(NotificationsPlugin)
+            .add_plugins(windows::WindowsPlugin)
             .add_plugins(TopMenuPlugin)
             .add_plugins(TabsPlugin)
             .add_plugins(BottomMenuPlugin)
@@ -76,7 +77,7 @@ impl Tab for EguiTab {
     fn title(&mut self) -> egui::WidgetText {
         match self {
             EguiTab::ThreeDView => "3D Viewer".into(),
-            EguiTab::PlotView(plot_ui) => "Plot".into(),
+            EguiTab::PlotView(plot_ui) => plot_ui.title.clone().into(),
             EguiTab::ParameterListView(group, parameter) => "Parameters".into(),
             EguiTab::MarkerDataView => "Markers".into(),
             EguiTab::AnalogDataView => "Analog".into(),
@@ -131,11 +132,11 @@ impl UiState {
                 //              EguiTab::ParameterListView("".into(), "".into()),
             ],
         );
-        let [_main, _bottom] = tree.main_surface_mut().split_below(
-            right,
-            0.8,
-            vec![EguiTab::PlotView(plot::PlotData::default())],
-        );
+ //       let [_main, _bottom] = tree.main_surface_mut().split_below(
+ //           right,
+ //           0.8,
+ //           vec![EguiTab::PlotView(plot::PlotData::default())],
+ //       );
 
         Self {
             tree,

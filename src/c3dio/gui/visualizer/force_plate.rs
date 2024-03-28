@@ -62,8 +62,8 @@ pub fn force_plates(
                 );
                 let end = Vec3::new(
                     -force[0]/500. + force_plate_data.corners[0][0] / 1000.0,
-                    -force[2]/500. + force_plate_data.corners[0][1] / 1000.0,
-                    -force[1]/500. + force_plate_data.corners[0][2] / 1000.0,
+                    -force[1]/500. + force_plate_data.corners[0][1] / 1000.0,
+                    -force[2]/500. + force_plate_data.corners[0][2] / 1000.0,
                 );
                 gizmos.arrow(start, end, Color::rgb(0.0, 1.0, 0.0));
             }
@@ -93,8 +93,6 @@ pub fn add_force_plates(
                     commands.entity(force_vector).despawn();
                 }
                 for (i, force_platform) in asset.c3d.forces.iter().enumerate() {
-                    dbg!(&force_platform.corners);
-                    dbg!(&force_platform.origin);
                     let cuboid = Cuboid::new(
                         (force_platform.corners[2][0] - force_platform.corners[0][0]).abs()
                             / 1000.0,

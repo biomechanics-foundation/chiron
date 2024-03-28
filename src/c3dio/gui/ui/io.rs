@@ -35,7 +35,7 @@ struct LoadFile(Option<PathBuf>);
 
 fn load_file_dialog(mut commands: Commands, mut events: EventReader<LoadFileEvent>) {
     for _ in events.read() {
-      let file = FileDialog::new().add_filter("C3D Files", &["c3d"]).pick_file();
+      let file = FileDialog::new().add_filter("C3D Files", &["c3d", "C3D", "C3d", "c3D"]).pick_file();
         commands.spawn(LoadFile(file));
     }
 }
@@ -97,7 +97,7 @@ fn save_as_file_system(
     mut notifications: ResMut<Notifications>,
     ) {
     for _ in events.read() {
-        let file = FileDialog::new().add_filter("C3D Files", &["c3d"]).save_file();
+        let file = FileDialog::new().add_filter("C3D Files", &["c3d", "C3D", "C3d", "c3D"]).save_file();
         if let Some(file) = file {
             save_file(file.to_str().unwrap(), &c3d_state, &c3d_assets, &mut notifications);
         }

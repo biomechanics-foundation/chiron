@@ -1,7 +1,7 @@
 use super::notifications::Toast;
 use super::plot::PlotData;
 use super::settings::StripedTable;
-use super::tabs::AddTabEvent;
+use crate::ui::windows::AddWindowEvent;
 use super::EguiTab;
 use bevy::prelude::*;
 use bevy_c3d::prelude::*;
@@ -60,7 +60,7 @@ fn draw_marker_data(ui: &mut egui::Ui, world: &mut World, c3d: &C3d) {
                         };
                         if ui.button(marker).clicked() {
                             for (j, dimension) in ["X", "Y", "Z"].iter().enumerate() {
-                                let data = c3d
+                                let data: Vec<[f64; 2]> = c3d
                                     .points
                                     .iter_col(i)
                                     .enumerate()
@@ -71,8 +71,8 @@ fn draw_marker_data(ui: &mut egui::Ui, world: &mut World, c3d: &C3d) {
                                         _ => unreachable!(),
                                     })
                                     .collect();
-                                world.send_event(AddTabEvent {
-                                    tab: EguiTab::PlotView(PlotData {
+                                world.send_event(AddWindowEvent {
+                                    window: EguiTab::PlotView(PlotData {
                                         title: format!("{} {}", marker, dimension),
                                         data,
                                     }),
