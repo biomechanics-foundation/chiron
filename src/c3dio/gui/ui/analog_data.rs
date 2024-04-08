@@ -1,6 +1,6 @@
 use super::plot::PlotData;
 use super::settings::StripedTable;
-use super::tabs::AddTabEvent;
+use crate::ui::windows::AddWindowEvent;
 use super::EguiTab;
 use bevy::prelude::*;
 use bevy_c3d::prelude::*;
@@ -60,12 +60,12 @@ fn draw_analog_data(ui: &mut egui::Ui, world: &mut World, c3d: &C3d) {
                         if ui.button(analog).clicked() {
                             let data = c3d
                                 .analog
-                                .iter_row(i)
+                                .iter_col(i)
                                 .enumerate()
                                 .map(|(i, v)| [i as f64, *v as f64])
                                 .collect();
-                            world.send_event(AddTabEvent {
-                                tab: EguiTab::PlotView(PlotData {
+                            world.send_event(AddWindowEvent {
+                                window: EguiTab::PlotView(PlotData {
                                     title: analog.to_string(),
                                     data,
                                 }),

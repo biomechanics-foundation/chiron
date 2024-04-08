@@ -1,7 +1,6 @@
 use super::C3dFrame;
 use bevy::prelude::*;
 use bevy_c3d::prelude::*;
-use std::cmp::min;
 
 pub struct ForcePlatePlugin;
 
@@ -40,6 +39,7 @@ pub fn force_plates(
                     .c3d
                     .force(force_plate.index, c3d_frame.frame() as usize);
                 if force.is_none() {
+                    dbg!("Force is none");
                     continue;
                 }
                 let force = force.unwrap();
@@ -49,21 +49,29 @@ pub fn force_plates(
                 if center_of_pressure.is_none() {
                     continue;
                 }
-                let origin = &asset.c3d.forces[force_plate.index].origin;
-                //                println!(
-                //                    "Force Plate {} Force: {:?} CoP: {:?} Origin: {:?}",
-                //                    force_plate.index, force, center_of_pressure, origin
-                //                );
+                let center_of_pressure = center_of_pressure.unwrap();
                 let force_plate_data = &asset.c3d.forces[force_plate.index];
+                let average_x = (force_plate_data.corners[0][0]
+                    + force_plate_data.corners[1][0]
+                    + force_plate_data.corners[2][0]
+                    + force_plate_data.corners[3][0])
+                    / 4.0;
+                let average_y = (force_plate_data.corners[0][1]
+                    + force_plate_data.corners[1][1]
+                    + force_plate_data.corners[2][1]
+                    + force_plate_data.corners[3][1])
+                    / 4.0;
+                let average_x = average_x - force_plate_data.origin[0];
+                let average_y = average_y + force_plate_data.origin[1];
                 let start = Vec3::new(
-                    force_plate_data.corners[0][0] / 1000.0,
-                    force_plate_data.corners[0][1] / 1000.0,
+                    (center_of_pressure[0] + average_x) / 1000.0,
+                    (center_of_pressure[1] + average_y) / 1000.0,
                     force_plate_data.corners[0][2] / 1000.0,
                 );
                 let end = Vec3::new(
-                    -force[0]/500. + force_plate_data.corners[0][0] / 1000.0,
-                    -force[1]/500. + force_plate_data.corners[0][1] / 1000.0,
-                    -force[2]/500. + force_plate_data.corners[0][2] / 1000.0,
+                    (force[0] + center_of_pressure[0] + average_x) / 1000.0,
+                    (force[1] + center_of_pressure[1] + average_y) / 1000.0,
+                    (-force[2] + force_plate_data.corners[0][2]) / 1000.0,
                 );
                 gizmos.arrow(start, end, Color::rgb(0.0, 1.0, 0.0));
             }
@@ -127,6 +135,16 @@ pub fn add_force_plates(
                             ..Default::default()
                         })
                         .insert(ForcePlate { index: i });
+                    commands.spawn(PbrBundle {
+                        mesh: meshes.add(Sphere { radius: 0.01 }),
+                        material: materials.add(Color::rgb_u8(0, 255, 0)),
+                        transform: Transform::from_translation(Vec3::new(
+                            min_x / 1000.0,
+                            min_y / 1000.0,
+                            min_z / 1000.0,
+                        )),
+                        ..Default::default()
+                    });
                 }
             }
             None => {}
