@@ -1,3 +1,4 @@
+use crate::ui::bottom_menu::C3dFrame;
 use bevy::prelude::*;
 use bevy::{
     //    gltf::GltfPlugin,
@@ -25,13 +26,16 @@ use bevy::{
     transform::TransformPlugin,
     ui::UiPlugin,
     window::WindowPlugin,
-    winit::WinitPlugin,
+    winit::{WinitPlugin, WinitWindows},
+    gizmos::GizmoPlugin,
 };
+use winit::window::Icon;
 
+pub mod c3d;
 mod camera;
-mod c3d;
+pub mod force_plate;
+pub mod marker;
 mod lighting;
-mod force_plate;
 
 pub struct VisualizerPlugin;
 
@@ -40,20 +44,14 @@ impl Plugin for VisualizerPlugin {
         app.add_plugins(VisualizerPlugins)
             .add_plugins(camera::CameraPlugin)
             .add_plugins(bevy_c3d::C3dPlugin)
+            .add_systems(Startup, window_setup)
             .add_systems(Startup, lighting::setup)
-            .add_systems(PostUpdate, c3d::update_c3d)
             .add_systems(Update, c3d::c3d_drag_and_drop)
             .add_systems(Update, c3d::load_c3d)
-            .add_systems(Update, c3d::markers)
+            .add_plugins(marker::MarkerPlugin)
             .add_plugins(force_plate::ForcePlatePlugin)
-            .init_resource::<State>();
+            .init_resource::<C3dFrame>();
     }
-}
-
-#[derive(Resource, Default, Debug)]
-pub struct State {
-    pub frame: usize,
-    pub updated_frame: bool,
 }
 
 struct VisualizerPlugins;
@@ -69,7 +67,13 @@ impl Plugin for VisualizerPlugins {
             .add_plugins(HierarchyPlugin::default())
             .add_plugins(DiagnosticsPlugin::default())
             .add_plugins(InputPlugin::default())
-            .add_plugins(WindowPlugin::default())
+            .add_plugins(WindowPlugin {
+                primary_window: Some(Window {
+                    title: "Chiron - C3D Visualizer | Biomechanics Foundation".to_string(),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            })
             .add_plugins(AccessibilityPlugin)
             .add_plugins(AssetPlugin::default())
             .add_plugins(ScenePlugin::default())
@@ -82,7 +86,26 @@ impl Plugin for VisualizerPlugins {
             .add_plugins(TextPlugin::default())
             .add_plugins(UiPlugin::default())
             .add_plugins(PbrPlugin::default())
-            .add_plugins(AnimationPlugin::default());
+            .add_plugins(AnimationPlugin::default())
+            .add_plugins(GizmoPlugin);
     }
 }
 
+fn window_setup(windows: NonSend<WinitWindows>) {
+    // here we use the `image` crate to load our icon data from a png file
+    // this is not a very bevy-native solution, but it will do
+    let (icon_rgba, icon_width, icon_height) = {
+        let image = image::open("assets/icon.png")
+            .expect("Failed to open icon path")
+            .into_rgba8();
+        let (width, height) = image.dimensions();
+        let rgba = image.into_raw();
+        (rgba, width, height)
+    };
+    let icon = Icon::from_rgba(icon_rgba, icon_width, icon_height).unwrap();
+
+    // do it for all windows
+    for window in windows.windows.values() {
+        window.set_window_icon(Some(icon.clone()));
+    }
+}

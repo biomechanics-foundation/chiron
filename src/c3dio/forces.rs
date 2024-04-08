@@ -7,7 +7,7 @@ use crate::args::{file_arg, output_arg};
 use clap::{ArgMatches, Command};
 use colored::Colorize;
 
-use c3dio::file_formats::Sto;
+use c3dio::file_formats::sto;
 use c3dio::prelude::*;
 
 pub(super) fn force_command() -> Command {
@@ -48,7 +48,7 @@ pub(super) fn process_forces_command(sub_matches: ArgMatches) {
                     let sto = build_sto(&c3d);
                     match sto {
                         Some(sto) => sto.write(PathBuf::from(output)),
-                        None => Err(C3dIoError::InvalidForcePlatformInfo(
+                        None => Err(C3dWriteError::InvalidForcePlatformInfo(
                             "Could not build sto file from c3d file".to_string(),
                         )),
                     }

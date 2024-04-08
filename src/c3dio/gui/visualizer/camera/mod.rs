@@ -2,15 +2,29 @@ use bevy::prelude::*;
 use bevy::render::camera::Viewport;
 use bevy::window::PrimaryWindow;
 
+mod pan_orbit;
+
 use crate::ui;
+use pan_orbit::pan_orbit_camera;
+use pan_orbit::PanOrbitCamera;
+use bevy_egui::EguiSettings;
 
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_camera)
-            .add_systems(PostUpdate, set_camera_viewport.after(ui::show_ui_system));
+        app.add_systems(Update, pan_orbit_camera)
+            .add_systems(Startup, setup_camera)
+            .add_systems(PostUpdate, set_camera_viewport.after(ui::show_ui_system))
+            .init_resource::<CameraMode>();
     }
+}
+
+#[derive(Resource, Default, PartialEq)]
+pub enum CameraMode {
+    Fly,
+    #[default]
+    PanOrbit,
 }
 
 #[derive(Component)]
@@ -19,9 +33,13 @@ pub struct MainCamera;
 pub fn setup_camera(mut commands: Commands) {
     commands.spawn((
         Camera3dBundle {
-            transform: Transform::from_xyz(0., 4., 1.)
-                .looking_at(Vec3::new(0., 0., 1.), Vec3::Z),
+            transform: Transform::from_xyz(0., 4., 1.).looking_at(Vec3::new(0., 0., 1.), Vec3::Z),
             ..Default::default()
+        },
+        {
+            PanOrbitCamera {
+                ..Default::default()
+            }
         },
         MainCamera,
     ));

@@ -1,4 +1,4 @@
-use c3dio::file_formats::Trc;
+use c3dio::file_formats::trc;
 use c3dio::prelude::*;
 use clap::{ArgMatches, Command};
 use colored::Colorize;

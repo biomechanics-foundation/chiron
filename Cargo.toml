@@ -1,6 +1,6 @@
 [package]
 name = "chiron"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["Claire V. Hammond <me@cvhammond.com>"]
 edition = "2021"
 categories = ["science", "simulation", "game-development", "science::robotics"]
@@ -12,18 +12,18 @@ readme = "README.md"
 keywords = ["biomechanics", "simulation", "game-development", "physics", "mathematics"]
 
 [dependencies]
-c3dio = "0.6.1"
-bevy_c3d = "0.12.1"
+c3dio = "0.8.0"
+bevy_c3d = "0.13.1"
 
-bevy = "0.12"
-bevy_egui = "0.24"
-egui_dock = "0.9"
-egui = "0.24"
-egui_plot = "0.24"
-egui_extras = { version = "0.24", features = ["image", "svg"] }
-strum = "0.25"
-strum_macros = "0.25"
+bevy = "0.13"
+bevy_egui = "0.26"
+egui_dock = "0.11"
+egui = "0.26"
+egui_plot = "0.26"
+egui_extras = "0.26"
 uuid = "1.4"
+winit = "0.29"
+image = "0.25"
 
 grid = "0.10"
 clap = "4.4"
@@ -32,6 +32,7 @@ env_logger = "0.10"
 colored = "2"
 indicatif = "0.17"
 glob = "0.3.1"
+rfd = "0.14"
 
 [dev-dependencies]
 test-files = "0.1.2"

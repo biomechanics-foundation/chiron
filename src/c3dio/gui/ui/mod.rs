@@ -1,34 +1,52 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-use bevy_c3d::prelude::*;
 use bevy_egui::EguiContext;
 use bevy_egui::EguiSet;
-use egui_dock::{DockArea, DockState, NodeIndex, Style, Tree};
+use egui_dock::{DockArea, DockState, NodeIndex, Style};
 
-mod data;
+use self::bottom_menu::BottomMenuPlugin;
+use self::notifications::NotificationsPlugin;
+use self::settings::SettingsPlugin;
+use self::tabs::TabsPlugin;
+use self::top_menu::TopMenuPlugin;
+
+mod analog_data;
+mod force_data;
+pub mod bottom_menu;
+mod io;
+mod marker_data;
 pub mod notifications;
 mod parameters;
 mod plot;
 mod settings;
+mod tabs;
 mod three_d;
+mod top_menu;
 mod windows;
-use notifications::NotificationQueue;
 
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(UiState::new())
+        app.add_plugins(SettingsPlugin)
+            .add_plugins(NotificationsPlugin)
+            .add_plugins(windows::WindowsPlugin)
+            .add_plugins(TopMenuPlugin)
+            .add_plugins(TabsPlugin)
+            .add_plugins(BottomMenuPlugin)
+            .init_resource::<UiState>()
             .add_systems(PostUpdate, show_ui_system.before(EguiSet::ProcessOutput));
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum EguiTab {
     ThreeDView,
     PlotView(plot::PlotData),
     ParameterListView(String, String),
-    DataView,
+    MarkerDataView,
+    AnalogDataView,
+    ForceDataView,
 }
 
 impl Tab for EguiTab {
@@ -42,26 +60,28 @@ impl Tab for EguiTab {
                 plot::draw_plot(ui, tab_viewer.world, plot_ui);
             }
             EguiTab::ParameterListView(group, parameter) => {
-                parameters::draw_parameters_list(
-                    ui,
-                    tab_viewer.world,
-                    tab_viewer.added_tabs,
-                    group,
-                    parameter,
-                );
+                parameters::draw_parameters_list(ui, tab_viewer.world, group, parameter);
             }
-            EguiTab::DataView => {
-                data::draw_data_view(ui, tab_viewer);
+            EguiTab::MarkerDataView => {
+                marker_data::draw_marker_data_view(ui, tab_viewer.world);
+            }
+            EguiTab::AnalogDataView => {
+                analog_data::draw_analog_data_view(ui, tab_viewer.world);
+            }
+            EguiTab::ForceDataView => {
+                force_data::draw_force_data_view(ui, tab_viewer.world);
             }
         }
     }
 
     fn title(&mut self) -> egui::WidgetText {
         match self {
-            EguiTab::ThreeDView => "3D View".into(),
-            EguiTab::PlotView(plot_ui) => "Plot".into(),
+            EguiTab::ThreeDView => "3D Viewer".into(),
+            EguiTab::PlotView(plot_ui) => plot_ui.title.clone().into(),
             EguiTab::ParameterListView(group, parameter) => "Parameters".into(),
-            EguiTab::DataView => "Data".into(),
+            EguiTab::MarkerDataView => "Markers".into(),
+            EguiTab::AnalogDataView => "Analog".into(),
+            EguiTab::ForceDataView => "Forces".into(),
         }
     }
 }
@@ -74,64 +94,30 @@ pub trait Tab {
 pub struct TabViewer<'a> {
     world: &'a mut World,
     viewport_rect: &'a mut egui::Rect,
-    added_tabs: &'a mut Vec<EguiTab>,
-    settings: &'a mut settings::GlobalUiSettings,
-    windows: &'a mut windows::Windows,
-    notifications: &'a mut NotificationQueue,
 }
 
 #[derive(Resource)]
 pub struct UiState {
     tree: DockState<EguiTab>,
     pub viewport_rect: egui::Rect,
-    settings: settings::GlobalUiSettings,
-    windows: windows::Windows,
-    pub notifications: NotificationQueue,
+}
+
+impl Default for UiState {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl UiState {
     fn ui(&mut self, world: &mut World, ctx: &mut egui::Context) {
-        let mut added_tabs = Vec::new();
-
-        self.windows
-            .show(ctx, &mut self.settings, &mut self.notifications);
-
         let mut tab_viewer = TabViewer {
             world,
             viewport_rect: &mut self.viewport_rect,
-            added_tabs: &mut added_tabs,
-            settings: &mut self.settings,
-            windows: &mut self.windows,
-            notifications: &mut self.notifications,
         };
 
         DockArea::new(&mut self.tree)
             .style(Style::from_egui(ctx.style().as_ref()))
             .show(ctx, &mut tab_viewer);
-
-        if !added_tabs.is_empty() {
-            let new_tab = added_tabs.pop().unwrap();
-            for node in self.tree.main_surface_mut().iter_mut() {
-                match node {
-                    egui_dock::Node::Leaf {
-                        rect,
-                        viewport,
-                        tabs,
-                        active,
-                        scroll,
-                    } => {
-                        for i in 0..tabs.len() {
-                            if std::mem::discriminant(&tabs[i]) == std::mem::discriminant(&new_tab)
-                            {
-                                tabs[i] = new_tab.clone();
-                                break;
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
     }
 
     pub fn new() -> Self {
@@ -140,22 +126,21 @@ impl UiState {
             NodeIndex::root(),
             0.2,
             vec![
-                EguiTab::DataView,
+                EguiTab::MarkerDataView,
+                EguiTab::AnalogDataView,
+                EguiTab::ForceDataView,
                 //              EguiTab::ParameterListView("".into(), "".into()),
             ],
         );
-        let [_main, _bottom] = tree.main_surface_mut().split_below(
-            right,
-            0.8,
-            vec![EguiTab::PlotView(plot::PlotData::default())],
-        );
+ //       let [_main, _bottom] = tree.main_surface_mut().split_below(
+ //           right,
+ //           0.8,
+ //           vec![EguiTab::PlotView(plot::PlotData::default())],
+ //       );
 
         Self {
             tree,
             viewport_rect: egui::Rect::NOTHING,
-            settings: settings::GlobalUiSettings::default(),
-            windows: windows::Windows::default(),
-            notifications: NotificationQueue::default(),
         }
     }
 }
@@ -188,18 +173,4 @@ pub fn show_ui_system(world: &mut World) {
     world.resource_scope::<UiState, _>(|world, mut ui_state| {
         ui_state.ui(world, egui_context.get_mut())
     });
-}
-
-pub fn get_c3d(world: &mut World) -> Option<&C3d> {
-    let c3d_state = world.get_resource::<C3dState>();
-    if let Some(c3d_state) = c3d_state {
-        let c3d_asset = world.get_resource::<Assets<C3dAsset>>();
-        if let Some(c3d_asset) = c3d_asset {
-            let c3d_asset = c3d_asset.get(&c3d_state.handle);
-            if let Some(c3d_asset) = c3d_asset {
-                return Some(&c3d_asset.c3d);
-            }
-        }
-    }
-    None
 }

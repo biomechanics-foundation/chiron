@@ -1,10 +1,9 @@
-use super::settings;
 use super::windows::Window;
-use std::collections::HashMap;
+use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
+use bevy_egui::EguiContext;
 use std::ops::{Deref, DerefMut};
 use std::time::{Duration, Instant};
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
 
 const TOAST_DURATION: Duration = Duration::from_secs(5);
 const TOAST_WIDTH: f32 = 300.;
@@ -15,7 +14,26 @@ const TOAST_ICON_SIZE: f32 = 32.;
 
 const OVERLAY_ICON_SIZE: f32 = 64.;
 
-#[derive(Clone, Debug)]
+pub struct NotificationsPlugin;
+
+impl Plugin for NotificationsPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_event::<Toast>()
+            .init_resource::<Notifications>()
+            .add_systems(Update, (collect_toast_events, show_notifications_system));
+    }
+}
+
+pub fn collect_toast_events(
+    mut events: EventReader<Toast>,
+    mut notifications: ResMut<Notifications>,
+) {
+    for event in events.read() {
+        notifications.add(event.clone());
+    }
+}
+
+#[derive(Event, Clone, Debug)]
 pub struct Toast {
     id: uuid::Uuid,
     pub title: String,
@@ -25,7 +43,7 @@ pub struct Toast {
 }
 
 impl Toast {
-    pub fn success(id: &str, title: &str) -> Self {
+    pub fn success(title: &str) -> Self {
         Self {
             id: uuid::Uuid::new_v4(),
             title: title.to_owned(),
@@ -35,7 +53,7 @@ impl Toast {
         }
     }
 
-    pub fn warning(id: &str, title: &str) -> Self {
+    pub fn warning(title: &str) -> Self {
         Self {
             id: uuid::Uuid::new_v4(),
             title: title.to_owned(),
@@ -45,7 +63,7 @@ impl Toast {
         }
     }
 
-    pub fn error(id: &str, title: &str) -> Self {
+    pub fn error(title: &str) -> Self {
         Self {
             id: uuid::Uuid::new_v4(),
             title: title.to_owned(),
@@ -55,7 +73,7 @@ impl Toast {
         }
     }
 
-    pub fn info(id: &str, title: &str) -> Self {
+    pub fn info(title: &str) -> Self {
         Self {
             id: uuid::Uuid::new_v4(),
             title: title.to_owned(),
@@ -65,7 +83,7 @@ impl Toast {
         }
     }
 
-    pub fn show(&self, ui: &mut egui::Ui, retained_images: &RetainedImages) {
+    pub fn show(&self, ui: &mut egui::Ui) {
         egui::Frame::none()
             .fill(self.color)
             .rounding(5.0)
@@ -73,11 +91,12 @@ impl Toast {
             .outer_margin(TOAST_OUTER_PADDING)
             .show(ui, |ui| {
                 ui.set_width(TOAST_WIDTH - TOAST_OUTER_PADDING * 3.);
-                let icon_image = retained_images.get(self.icon);
                 ui.horizontal(|ui| {
-                    if let Some(icon_image) = icon_image {
-                        icon_image.toast.show(ui);
-                    }
+                    ui.label(
+                        egui::RichText::new(self.icon.to_emoji())
+                            .color(egui::Color32::BLACK)
+                            .size(TOAST_ICON_SIZE),
+                    );
                     ui.label(
                         egui::RichText::new(&self.title)
                             .color(egui::Color32::BLACK)
@@ -104,7 +123,7 @@ impl Overlay {
     }
 }
 
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, EnumIter)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
 pub enum Icon {
     Info,
     Success,
@@ -114,54 +133,37 @@ pub enum Icon {
 }
 
 impl Icon {
-    fn initialize_image_set(bytes: &[u8]) -> Result<RetainedImageSet, String> {
-        let toast = egui_extras::image::RetainedImage::from_svg_bytes_with_size(
-            "toast",
-            bytes,
-            egui_extras::image::FitTo::Size(TOAST_ICON_SIZE as u32, TOAST_ICON_SIZE as u32),
-        )?;
-        let overlay = egui_extras::image::RetainedImage::from_svg_bytes_with_size(
-            "overlay",
-            bytes,
-            egui_extras::image::FitTo::Size(OVERLAY_ICON_SIZE as u32, OVERLAY_ICON_SIZE as u32),
-        )?;
-        Ok(RetainedImageSet { toast, overlay })
+    pub fn to_emoji(&self) -> &str {
+        match self {
+            Icon::Info => "🚩",
+            Icon::Success => "✅",
+            Icon::Warning => "⚠️",
+            Icon::Error => "❌",
+            Icon::Upload => "📤",
+        }
+    }
+}
+
+#[derive(Resource, Default)]
+pub struct Notifications {
+    pub queue: NotificationQueue,
+}
+
+impl Notifications {
+    pub fn add(&mut self, toast: Toast) {
+        self.queue.push(toast);
     }
 
-    pub fn initialize_images(&self, images: &mut RetainedImages) {
-        match self {
-            Icon::Info => {
-                let info =
-                    Icon::initialize_image_set(include_bytes!("icons/exclamation-circle.svg"));
-                if let Ok(info) = info {
-                    images.insert(Icon::Info, info);
-                }
-            }
-            Icon::Success => {
-                let success = Icon::initialize_image_set(include_bytes!("icons/check-circle.svg"));
-                if let Ok(success) = success {
-                    images.insert(Icon::Success, success);
-                }
-            }
-            Icon::Warning => {
-                let warning = Icon::initialize_image_set(include_bytes!("icons/warning.svg"));
-                if let Ok(warning) = warning {
-                    images.insert(Icon::Warning, warning);
-                }
-            }
-            Icon::Error => {
-                let error = Icon::initialize_image_set(include_bytes!("icons/close-circle.svg"));
-                if let Ok(error) = error {
-                    images.insert(Icon::Error, error);
-                }
-            }
-            Icon::Upload => {
-                let upload = Icon::initialize_image_set(include_bytes!("icons/upload.svg"));
-                if let Ok(upload) = upload {
-                    images.insert(Icon::Upload, upload);
-                }
-            }
-        }
+    pub fn pop_by_id(&mut self, id: uuid::Uuid) {
+        self.queue.pop_by_id(id);
+    }
+
+    pub fn overlay(&mut self, icon: Icon, window_outline: bool) {
+        self.queue.overlay(icon, window_outline);
+    }
+
+    pub fn remove_overlay(&mut self) {
+        self.queue.remove_overlay();
     }
 }
 
@@ -169,7 +171,6 @@ impl Icon {
 pub struct NotificationQueue {
     toasts: Vec<Toast>,
     overlay: Option<Overlay>,
-    retained_images: RetainedImages,
 }
 
 impl Deref for NotificationQueue {
@@ -217,80 +218,41 @@ impl NotificationQueue {
                     ids_to_remove.push(toast.id.clone());
                 }
             }
-            toast.show(&mut child_ui, &self.retained_images);
+            toast.show(&mut child_ui);
         }
         for id in ids_to_remove {
             self.pop_by_id(id);
         }
         if let Some(overlay) = &self.overlay {
             if overlay.window_outline {
-                let icon_image = self.retained_images.get(overlay.icon);
-                if let Some(icon_image) = icon_image {
-                    ui.painter().rect_filled(
-                        egui::Rect::from_center_size(
-                            center,
-                            egui::Vec2::new(OVERLAY_ICON_SIZE, OVERLAY_ICON_SIZE),
-                        ),
-                        5.0,
-                        egui::Color32::from_rgba_unmultiplied(255, 255, 255, 50),
-                    );
-                    icon_image.overlay.show(&mut ui.child_ui(
-                        egui::Rect::from_center_size(
-                            center,
-                            egui::Vec2::new(OVERLAY_ICON_SIZE, OVERLAY_ICON_SIZE),
-                        ),
-                        egui::Layout::default(),
-                    ));
-                }
+                ui.painter().rect_filled(
+                    egui::Rect::from_center_size(
+                        center,
+                        egui::Vec2::new(OVERLAY_ICON_SIZE, OVERLAY_ICON_SIZE),
+                    ),
+                    5.0,
+                    egui::Color32::from_rgba_unmultiplied(255, 255, 255, 50),
+                );
+                ui.with_layout(
+                    egui::Layout::centered_and_justified(egui::Direction::TopDown),
+                    |ui| {
+                        ui.label(
+                            egui::RichText::new(overlay.icon.to_emoji())
+                                .color(egui::Color32::WHITE)
+                                .size(OVERLAY_ICON_SIZE * 0.8),
+                        );
+                    },
+                );
             }
         }
     }
 }
 
-pub struct RetainedImageSet {
-    toast: egui_extras::image::RetainedImage,
-    overlay: egui_extras::image::RetainedImage,
-}
-
-pub struct RetainedImages {
-    images: HashMap<Icon, RetainedImageSet>,
-}
-
-impl Default for RetainedImages {
-    fn default() -> Self {
-        let mut retained_images = Self {
-            images: HashMap::new(),
-        };
-        for icon in Icon::iter() {
-            icon.initialize_images(&mut retained_images);
-        }
-        retained_images
-    }
-}
-
-impl RetainedImages {
-    pub fn get(&self, icon: Icon) -> Option<&RetainedImageSet> {
-        self.images.get(&icon)
-    }
-
-    pub fn insert(&mut self, icon: Icon, image: RetainedImageSet) {
-        self.images.insert(icon, image);
-    }
-}
-
-#[derive(Default)]
-pub struct NotificationUi;
-
-impl Window for NotificationUi {
-    fn ui(
-        &mut self,
-        ctx: &mut egui::Context,
-        _settings: &mut settings::GlobalUiSettings,
-        notifications: &mut NotificationQueue,
-    ) {
+impl Window for Notifications {
+    fn ui(&mut self, _world: &mut World, ctx: &mut egui::Context) {
         let mut stroke = egui::Stroke::new(5.0, egui::Color32::TRANSPARENT);
         let center = ctx.screen_rect().center();
-        if let Some(overlay) = &notifications.overlay {
+        if let Some(overlay) = &self.queue.overlay {
             if overlay.window_outline {
                 stroke.color = egui::Color32::WHITE;
             }
@@ -307,12 +269,26 @@ impl Window for NotificationUi {
             .interactable(false)
             .fixed_rect(ctx.screen_rect())
             .show(ctx, |ui| {
-                notifications.show(ui, center);
-                ui.allocate_space(ui.available_size());
+                self.queue.show(ui, center);
+                ui.allocate_space(ui.available_size() - egui::Vec2::new(0., OVERLAY_ICON_SIZE))
             });
     }
 
     fn title(&mut self) -> egui::WidgetText {
         "Notifications".into()
     }
+}
+
+pub fn show_notifications_system(world: &mut World) {
+    let Ok(egui_context) = world
+        .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
+        .get_single(world)
+    else {
+        return;
+    };
+    let mut egui_context = egui_context.clone();
+
+    world.resource_scope::<Notifications, _>(|world, mut notifications| {
+        notifications.ui(world, egui_context.get_mut())
+    });
 }
