@@ -153,6 +153,9 @@ pub fn bottom_menu_system(world: &mut World) {
                                 .on_hover_text("Play/Pause")
                                 .clicked()
                             {
+                                if c3d_frame.frame() >= max_frames {
+                                    c3d_frame.update_frame(0.);
+                                }
                                 player_control.is_playing = !player_control.is_playing;
                             }
                             if ui

@@ -1,5 +1,4 @@
 use super::io::{CloseC3DEvent, IoPlugin, LoadFileEvent, SaveAsFileEvent, SaveFileEvent};
-use super::plot::PlotData;
 use super::tabs::AddTabEvent;
 use super::EguiTab;
 use bevy::prelude::*;
@@ -25,11 +24,20 @@ pub fn top_menu_system(world: &mut World) {
     };
     let mut ctx = egui_context.clone();
 
+    //NESTED MENU EXAMPLE
+    //ui.menu_button("Notifications", |ui| {
+    //    if ui.button("Clear").clicked() {
+    //        ui.close_menu();
+    //    }
+    //});
     TopBottomPanel::top("top_panel").show(ctx.get_mut(), |ui| {
         egui::menu::bar(ui, |ui| {
             ui.menu_button("File", |ui| {
                 if ui.button("Open...").clicked() {
                     world.send_event(LoadFileEvent);
+                    ui.close_menu();
+                }
+                if ui.button("Import...").clicked() {
                     ui.close_menu();
                 }
                 if ui.button("Save").clicked() {
@@ -38,6 +46,9 @@ pub fn top_menu_system(world: &mut World) {
                 }
                 if ui.button("Save As...").clicked() {
                     world.send_event(SaveAsFileEvent);
+                    ui.close_menu();
+                }
+                if ui.button("Export...").clicked() {
                     ui.close_menu();
                 }
                 if ui.button("Close Current File").clicked() {
@@ -68,12 +79,6 @@ pub fn top_menu_system(world: &mut World) {
                     });
                     ui.close_menu();
                 }
-                if ui.button("Plot").clicked() {
-                    world.send_event(AddTabEvent {
-                        tab: EguiTab::PlotView(PlotData::default()),
-                    });
-                    ui.close_menu();
-                }
                 if ui.button("Parameters").clicked() {
                     world.send_event(AddTabEvent {
                         tab: EguiTab::ParameterListView("".into(), "".into()),
@@ -81,14 +86,29 @@ pub fn top_menu_system(world: &mut World) {
                     ui.close_menu();
                 }
             });
-            ui.menu_button("Tools", |ui| {
-                ui.menu_button("Notifications", |ui| {
-                    if ui.button("Clear").clicked() {
-                        ui.close_menu();
-                    }
-                });
-            });
+            ui.menu_button("Tools", |ui| {});
             ui.menu_button("Help", |ui| {
+                if ui.button("Getting Started").clicked() {
+                    ui.close_menu();
+                }
+                if ui.button("User Guide").clicked() {
+                    ui.close_menu();
+                }
+                if ui.button("Tutorials").clicked() {
+                    ui.close_menu();
+                }
+                if ui.button("Documentation").clicked() {
+                    ui.close_menu();
+                }
+                if ui.button("GitHub").clicked() {
+                    ui.close_menu();
+                }
+                if ui.button("Report Issue").clicked() {
+                    ui.close_menu();
+                }
+                if ui.button("Check for Updates").clicked() {
+                    ui.close_menu();
+                }
                 if ui.button("About").clicked() {
                     ui.close_menu();
                 }
