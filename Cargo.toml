@@ -25,6 +25,7 @@ uuid = "1.4"
 winit = "0.29"
 image = "0.25"
 
+bevy_mod_outline = "0.7"
 grid = "0.10"
 clap = "4.4"
 log = "0.4"

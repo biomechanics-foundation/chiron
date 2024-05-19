@@ -1,8 +1,9 @@
 use super::notifications::Toast;
 use super::plot::PlotData;
 use super::settings::StripedTable;
-use crate::ui::windows::AddWindowEvent;
 use super::EguiTab;
+use crate::ui::windows::AddWindowEvent;
+use crate::visualizer::marker::{SelectMarkerEvent, SelectedMarkers};
 use bevy::prelude::*;
 use bevy_c3d::prelude::*;
 use egui_extras::{Column, TableBuilder};
@@ -32,6 +33,17 @@ pub fn draw_marker_data_view(ui: &mut egui::Ui, world: &mut World) {
 }
 
 fn draw_marker_data(ui: &mut egui::Ui, world: &mut World, c3d: &C3d) {
+    ui.horizontal(|ui| {
+        ui.button("Select All").on_hover_text("Select all markers");
+        ui.button("Deselect All")
+            .on_hover_text("Deselect all markers");
+        ui.button("Hide All").on_hover_text("Hide all markers");
+        ui.button("Show All").on_hover_text("Show all markers");
+        ui.button("Show Only Selected")
+            .on_hover_text("Show only selected markers");
+        ui.button("Show Outlines")
+            .on_hover_text("Show outlines of selected markers");
+    });
     world.resource_scope::<StripedTable, _>(|world, striped_table| {
         TableBuilder::new(ui)
             .striped(striped_table.0)
@@ -53,37 +65,67 @@ fn draw_marker_data(ui: &mut egui::Ui, world: &mut World, c3d: &C3d) {
                         ui.label(i.to_string());
                     });
                     row.col(|ui| {
-                        let marker = if let Some(label) = c3d.points.labels.get(i) {
-                            label
-                        } else {
-                            "Unknown"
+                        let marker = match c3d.points.labels.get(i) {
+                            Some(marker) => marker,
+                            None => "Unknown",
                         };
-                        if ui.button(marker).clicked() {
-                            for (j, dimension) in ["X", "Y", "Z"].iter().enumerate() {
-                                let data: Vec<[f64; 2]> = c3d
-                                    .points
-                                    .iter_col(i)
-                                    .enumerate()
-                                    .map(|(i, v)| match j {
-                                        0 => [i as f64, v[0] as f64],
-                                        1 => [i as f64, v[1] as f64],
-                                        2 => [i as f64, v[2] as f64],
-                                        _ => unreachable!(),
-                                    })
-                                    .collect();
-                                world.send_event(AddWindowEvent {
-                                    window: EguiTab::PlotView(PlotData {
-                                        title: format!("{} {}", marker, dimension),
-                                        data,
-                                    }),
-                                });
-                                world.send_event(Toast::info(
-                                    format!("{} {}", marker, dimension).as_str(),
-                                ));
+                        let marker_button = ui.add(
+                            egui::Button::new(marker).selected(is_marker_selected(world, marker)),
+                        );
+                        marker_button.context_menu(|ui| {
+                            if ui.button("Plot").clicked() {
+                                for (j, dimension) in ["X", "Y", "Z"].iter().enumerate() {
+                                    let data: Vec<[f64; 2]> = c3d
+                                        .points
+                                        .iter_col(i)
+                                        .enumerate()
+                                        .map(|(i, v)| match j {
+                                            0 => [i as f64, v[0] as f64],
+                                            1 => [i as f64, v[1] as f64],
+                                            2 => [i as f64, v[2] as f64],
+                                            _ => unreachable!(),
+                                        })
+                                        .collect();
+                                    world.send_event(AddWindowEvent {
+                                        window: EguiTab::PlotView(PlotData {
+                                            title: format!("{} {}", marker, dimension),
+                                            data,
+                                        }),
+                                    });
+                                    world.send_event(Toast::info(
+                                        format!("{} {}", marker, dimension).as_str(),
+                                    ));
+                                }
                             }
+                            if ui.button("Rename").clicked() {
+                                world.send_event(SelectMarkerEvent(marker.to_string()));
+                            }
+                            if ui.button("Change Color").clicked() {
+                                world.send_event(SelectMarkerEvent(marker.to_string()));
+                            }
+                            if ui.button("Delete").clicked() {
+                                world.send_event(SelectMarkerEvent(marker.to_string()));
+                            }
+                            if ui.button("Select").clicked() {
+                                world.send_event(SelectMarkerEvent(marker.to_string()));
+                            }
+                            if ui.button("Hide").clicked() {
+                                world.send_event(SelectMarkerEvent(marker.to_string()));
+                            }
+                        });
+                        if marker_button.clicked() {
+                            world.send_event(SelectMarkerEvent(marker.to_string()));
                         }
                     });
                 });
             });
     });
+}
+
+fn is_marker_selected(world: &mut World, marker: &str) -> bool {
+    let selected_marker = world.get_resource::<SelectedMarkers>();
+    if let Some(selected_marker) = selected_marker {
+        return selected_marker.0.contains(&marker.to_string());
+    }
+    false
 }

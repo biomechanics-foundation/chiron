@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use egui_plot::{Line, Plot, PlotPoints};
+use egui_plot::{Line, Plot};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PlotData {
@@ -22,6 +22,7 @@ pub fn draw_plot(ui: &mut egui::Ui, world: &mut World, plot_ui: &mut PlotData) {
         return;
     }
     let step = (plot_ui.data.len() / 1000).max(1);
+    dbg!(step);
     let data: Vec<[f64; 2]> = plot_ui
         .data
         .iter()
@@ -41,13 +42,3 @@ pub fn draw_plot(ui: &mut egui::Ui, world: &mut World, plot_ui: &mut PlotData) {
     }
 }
 
-pub fn select_plot(ui: &mut egui::Ui) {
-    let sin: PlotPoints = (0..1000)
-        .map(|i| {
-            let x = i as f64 * 0.01;
-            [x, x.sin()]
-        })
-        .collect();
-    let line = Line::new(sin);
-    Plot::new("my_plot").show(ui, |plot_ui| plot_ui.line(line));
-}
