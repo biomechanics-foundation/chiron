@@ -1,6 +1,6 @@
-use crate::gui::ui::notifications::Notifications;
-use crate::ui::notifications::{Icon, Toast};
-use crate::visualizer::C3dFrame;
+use super::super::ui::notifications::Notifications;
+use super::super::ui::notifications::{Icon, Toast};
+use super::super::visualizer::C3dFrame;
 use bevy::prelude::*;
 use bevy_c3d::*;
 

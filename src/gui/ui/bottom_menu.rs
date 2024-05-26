@@ -2,7 +2,6 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_c3d::prelude::*;
 use bevy_egui::EguiContext;
-use c3dio::c3d;
 use egui::widgets::Button;
 use egui::DragValue;
 use egui::RichText;

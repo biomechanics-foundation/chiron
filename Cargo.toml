@@ -10,10 +10,12 @@ homepage = "https://chiron.rs"
 repository = "https://github.com/biomechanics-foundation/chiron"
 readme = "README.md"
 keywords = ["biomechanics", "simulation", "game-development", "physics", "mathematics"]
+default-run = "chiron"
 
 [dependencies]
 c3dio = "0.8.0"
 bevy_c3d = "0.13.1"
+butterworth = "0.1.0"
 
 bevy = "0.13"
 bevy_egui = "0.26"
@@ -24,14 +26,11 @@ egui_extras = "0.26"
 uuid = "1.4"
 winit = "0.29"
 image = "0.25"
-
 bevy_mod_outline = "0.7"
+
+argh = "0.1.12"
+yansi = "1.0.1"
 grid = "0.10"
-clap = "4.4"
-log = "0.4"
-env_logger = "0.10"
-colored = "2"
-indicatif = "0.17"
 glob = "0.3.1"
 rfd = "0.14"
 
@@ -42,3 +41,6 @@ test-files = "0.1.2"
 name = "c3dio"
 path = "src/c3dio/main.rs"
 
+[[bin]]
+name = "chiron"
+path = "src/gui/main.rs"

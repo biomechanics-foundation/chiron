@@ -1,4 +1,4 @@
-use crate::visualizer::C3dFrame;
+use super::super::visualizer::C3dFrame;
 use bevy::prelude::*;
 use bevy_c3d::*;
 use bevy_mod_outline::{OutlineBundle, OutlinePlugin, OutlineStencil, OutlineVolume};

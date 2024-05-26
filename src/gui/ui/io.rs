@@ -1,4 +1,4 @@
-use crate::gui::ui::notifications::Notifications;
+use super::super::ui::notifications::Notifications;
 use crate::ui::notifications::Toast;
 use crate::visualizer::marker::Marker;
 use bevy::prelude::*;

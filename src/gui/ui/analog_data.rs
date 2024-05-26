@@ -1,6 +1,6 @@
 use super::plot::PlotData;
 use super::settings::StripedTable;
-use crate::ui::windows::AddWindowEvent;
+use super::windows::AddWindowEvent;
 use super::EguiTab;
 use bevy::prelude::*;
 use bevy_c3d::prelude::*;

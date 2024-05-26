@@ -1,28 +1,16 @@
+use crate::helpers::is_force_channel;
 use grid::Grid;
 use std::fmt::Display;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use crate::args::{file_arg, output_arg};
-use clap::{ArgMatches, Command};
-use colored::Colorize;
-
-use c3dio::file_formats::sto;
 use c3dio::prelude::*;
+use yansi::Paint;
 
-pub(super) fn force_command() -> Command {
-    Command::new("forces")
-        .about("Prints the force data from a C3D file")
-        .arg(file_arg().required(true))
-        .arg(output_arg().required(true))
-}
-
-pub(super) fn process_forces_command(sub_matches: ArgMatches) {
-    let file = sub_matches.get_one::<String>("FILE").unwrap();
-    let output = sub_matches.get_one::<String>("OUTPUT").unwrap();
+pub(super) fn export_analog(file: &str, output: &str) {
     let format = match output.split('.').last() {
         Some(format) => {
-            let format = ForceOutputFileTypes::from_str(format.trim().to_lowercase().as_str());
+            let format = AnalogOutputFileTypes::from_str(format.trim().to_lowercase().as_str());
             match format {
                 Ok(format) => format,
                 Err(e) => {
@@ -44,7 +32,7 @@ pub(super) fn process_forces_command(sub_matches: ArgMatches) {
         Ok(c3d) => {
             println!("Converting to {}", format.to_string().bright_yellow());
             let write_attempt = match format {
-                ForceOutputFileTypes::Sto => {
+                AnalogOutputFileTypes::Sto => {
                     let sto = build_sto(&c3d);
                     match sto {
                         Some(sto) => sto.write(PathBuf::from(output)),
@@ -64,25 +52,25 @@ pub(super) fn process_forces_command(sub_matches: ArgMatches) {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-enum ForceOutputFileTypes {
+enum AnalogOutputFileTypes {
     Sto,
 }
 
-impl FromStr for ForceOutputFileTypes {
+impl FromStr for AnalogOutputFileTypes {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.trim().to_lowercase().as_str() {
-            "sto" => Ok(ForceOutputFileTypes::Sto),
+            "sto" => Ok(AnalogOutputFileTypes::Sto),
             _ => Err(format!("{} is not a valid output format", s)),
         }
     }
 }
 
-impl Display for ForceOutputFileTypes {
+impl Display for AnalogOutputFileTypes {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ForceOutputFileTypes::Sto => write!(f, "sto"),
+            AnalogOutputFileTypes::Sto => write!(f, "sto"),
         }
     }
 }
@@ -90,25 +78,11 @@ impl Display for ForceOutputFileTypes {
 fn build_sto(c3d: &C3d) -> Option<Sto> {
     let mut column_names = Vec::new();
     let mut data = Grid::new(c3d.analog.analog.size().0, 0);
-    if c3d.forces.len() > 0 {
-        for (i, plate) in c3d.forces.iter().enumerate() {
-            for channel in plate.channels.into_iter() {
-                let channel = channel as usize;
-                if c3d.analog.labels.len() >= channel {
-                    column_names.push(c3d.analog.labels[channel - 1].clone());
-                } else {
-                    column_names.push(format!("column_{}", channel));
-                }
-                data.push_col(c3d.analog.iter_col(channel - 1).cloned().collect());
-            }
-            let origin = plate.origin.as_ref();
-            if origin.len() >= i + 1 {
-                column_names.push(format!("EC{}X", i + 1));
-                column_names.push(format!("EC{}Y", i + 1));
-                column_names.push(format!("EC{}Z", i + 1));
-                data.push_col(vec![origin[0] as f64; data.size().0]);
-                data.push_col(vec![origin[1] as f64; data.size().0]);
-                data.push_col(vec![origin[2] as f64; data.size().0]);
+    if c3d.analog.cols() > 0 {
+        for (i, channel) in c3d.analog.iter().enumerate() {
+            if !is_force_channel(c3d, (i + 1) as u8) {
+                column_names.push(c3d.analog.labels[i].clone());
+                data.push_col(vec![channel.clone()]);
             }
         }
         Some(Sto {
@@ -121,7 +95,8 @@ fn build_sto(c3d: &C3d) -> Option<Sto> {
             data,
         })
     } else {
-        println!("{}", "No force data was found in the C3D file".red());
+        println!("{}", "No analog data was found in the C3D file".red());
         None
     }
 }
+
