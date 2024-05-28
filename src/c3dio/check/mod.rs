@@ -10,7 +10,7 @@ pub(super) struct Check {
 }
 
 pub(super) fn print_check(check: Check) {
-    println!("Checking file: {}", check.file);
+    println!("Checking file: {}", check.file.bold());
     match C3d::load(&check.file) {
         Ok(_c3d) => {
             println!("{}: The file is a valid C3D file", "SUCCESS".green().bold());

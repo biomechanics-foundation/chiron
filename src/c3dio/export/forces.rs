@@ -81,7 +81,7 @@ fn build_sto(c3d: &C3d) -> Option<Sto> {
         for (i, plate) in c3d.forces.iter().enumerate() {
             for channel in plate.channels.into_iter() {
                 let channel = channel as usize;
-                if c3d.analog.labels.len() >= channel {
+                if c3d.analog.labels.len() >= channel && channel > 0 {
                     column_names.push(c3d.analog.labels[channel - 1].clone());
                 } else {
                     column_names.push(format!("column_{}", channel));
