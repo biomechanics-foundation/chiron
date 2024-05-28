@@ -65,32 +65,60 @@ pub(super) fn filter(filter: Filter) {
         "Filter order: {} & cutoff frequency: {} Hz",
         filter.order, filter.cutoff_freq
     );
-    let butter_filter = match ButterFilter::new(
-        filter.order,
-        c3d.points.frame_rate.into(),
-        Cutoff::LowPass(filter.cutoff_freq.into()),
-    ) {
-        Ok(filter) => filter,
-        Err(e) => {
-            println!("{}: {}", "Error".red().bold(), e.red().italic());
-            return;
-        }
-    };
+    if !filter.markers && !filter.forces && !filter.analog {
+        println!(
+            "{}: {}",
+            "Error".red().bold(),
+            "No data selected to filter".red().italic()
+        );
+        return;
+    }
     if filter.markers {
+        let butter_filter_markers = match ButterFilter::new(
+            filter.order,
+            c3d.points.frame_rate.into(),
+            Cutoff::LowPass(filter.cutoff_freq.into()),
+        ) {
+            Ok(filter) => filter,
+            Err(e) => {
+                println!("{}: {}", "Error".red().bold(), e.red().italic());
+                return;
+            }
+        };
         println!("Filtering marker data");
-        filter_markers(&mut c3d, &butter_filter);
+        filter_markers(&mut c3d, &butter_filter_markers);
     }
-    if filter.forces {
-        println!("Filtering force data");
-        filter_forces(&mut c3d, &butter_filter);
-    }
-    if filter.analog {
-        println!("Filtering analog data");
-        filter_analog(&mut c3d, &butter_filter);
+    if filter.forces || filter.analog {
+        let butter_filter_analog = match ButterFilter::new(
+            filter.order,
+            c3d.points.frame_rate as f64 * c3d.analog.samples_per_channel_per_frame as f64,
+            Cutoff::LowPass(filter.cutoff_freq.into()),
+        ) {
+            Ok(filter) => filter,
+            Err(e) => {
+                println!("{}: {}", "Error".red().bold(), e.red().italic());
+                return;
+            }
+        };
+        if filter.forces {
+            println!("Filtering force data");
+            filter_forces(&mut c3d, &butter_filter_analog);
+        }
+        if filter.analog {
+            println!("Filtering analog data");
+            filter_analog(&mut c3d, &butter_filter_analog);
+        }
     }
     let output = match filter.output {
         Some(output) => output,
-        None => format!("{}_filtered.c3d", filter.file),
+        None => {
+            let temp = filter.file.split('.').collect::<Vec<&str>>();
+            let temp = match temp.len() {
+                0 => format!("filtered.c3d"),
+                _ => format!("{}_filtered.c3d", temp[..temp.len() - 1].join(".")),
+            };
+            temp
+        }
     };
     println!("Output file: {}", output.bold());
     match c3d.write(&output) {
@@ -115,7 +143,7 @@ fn filter_markers(c3d: &mut C3d, filter: &ButterFilter) {
                 }
             };
             for (k, val) in filtered.iter().enumerate() {
-                c3d.points[i][k][j] = *val as f32;
+                c3d.points[k][i][j] = *val as f32;
             }
         }
     }
@@ -137,7 +165,7 @@ fn filter_forces(c3d: &mut C3d, filter: &ButterFilter) {
                     }
                 };
                 for (k, val) in filtered.iter().enumerate() {
-                    c3d.analog[channel as usize - 1][k] = *val;
+                    c3d.analog[k][channel as usize - 1] = *val;
                 }
             }
         }
@@ -167,7 +195,7 @@ fn filter_analog(c3d: &mut C3d, filter: &ButterFilter) {
                 }
             };
             for (k, val) in filtered.iter().enumerate() {
-                c3d.analog[i][k] = *val;
+                c3d.analog[k][i] = *val;
             }
         }
     }
